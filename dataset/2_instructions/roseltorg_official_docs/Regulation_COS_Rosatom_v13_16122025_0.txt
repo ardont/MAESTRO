@@ -1,0 +1,1503 @@
+SOURCE DOCUMENT: https://www.roseltorg.ru/_flysystem/webdav/2025/12/16/Regulation_COS_Rosatom_v13_16122025_0.pdf
+TITLE: Регламент КИМ и ГК «РОСАТОМ» на английском языке.pdf
+============================================================
+
+--- Page 1 ---
+ 
+ 
+ 
+APPROVED BY 
+Deputy General Director for Development 
+Unified Electronic Trading Platform, JSC 
+ 
+ 
+ 
+ 
+_______________ Simonenko V. 
+ 
+ 
+RULES 
+of operation of the State Atomic Energy Corporation Rosatom Corporate Online Store  
+for simplified purchasing procedures  
+(revision No. 2 dd. 07.12.2018, revision No. 3 dd. 07.08.2020,  
+revision No. 4 dd. 03.11.2020, revision No. 5 dd. 13.02.2021,  
+revision No. 6 dd. 29.04.2021, revision No. 7 dd. 07.12.2021,  
+revision No. 8 dd. 16.03.2023, revision No. 9 dd. 29.05.2023, 
+revision No. 10 dd. 12.08.2023, revision No. 11 dd. 18.11.2024, 
+revision No. 12 dd. 28.12.2024, revision No. 13 dd. 16.12.2025) 
+Moscow 2025 
+
+--- Page 2 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+2 
+ 
+TABLE OF CONTENTS 
+ 
+1. 
+BASIC TERMS AND DEFINITIONS .................................................................................... 3 
+2. 
+GENERAL PROVISIONS ....................................................................................................... 6 
+3. 
+RIGHTS AND OBLIGATIONS OF THE PARTIES .............................................................. 8 
+4. 
+ACCREDITATION OF ORGANIZATIONS ........................................................................ 13 
+5. 
+PRINCIPLES OF WORKING IN A CORPORATE ONLINE STORE................................ 17 
+6. 
+RULES OF WORK IN THE CORPORATE ONLINE STORE ........................................... 18 
+7. 
+CLASSIFIER ......................................................................................................................... 23 
+8. 
+POSITION REFERENCE ...................................................................................................... 24 
+9. 
+SUPPLIER'S PRICE LIST ..................................................................................................... 25 
+10. SIGNING A CONTRACT WITH A SUPPLIER IN A CORPORATE ONLINE STORE ... 27 
+11. LIABILITY OF THE PARTIES ............................................................................................ 29 
+12. CONFIDENTIALITY ............................................................................................................ 31 
+13. FORCE MAJEURE ............................................................................................................... 32 
+14. DISPUTE RESOLUTION ..................................................................................................... 33 
+15. OPENING AND MAINTAINING COS OPS ACCOUNTS FOR OPERATIONS TO 
+ENSURE PARTICIPATION IN NEEDS ..................................................................................... 34 
+ 
+ 
+ 
+
+--- Page 3 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+3 
+ 
+1. BASIC TERMS AND DEFINITIONS 
+Accreditation – granting the Customer / Supplier the right to participate in the process of 
+conducting procedures, working in the corporate online store in accordance with the provisions of 
+these Regulations. 
+Analyst of normative reference information – a specialist of ETP who normalizes the 
+positions of Suppliers ' price lists (hereinafter-NSI analyst). 
+United Electronic Trading Platform (ETP) – a company that owns the rights to a 
+Corporate online store and the hardware and software necessary for its operation, which provides 
+for the implementation of procedures and other actions of Suppliers and Customers provided for 
+in these Regulations. 
+An emergency situation – a technical failure, DDoS attack, or other situations that led to a 
+complete or partial failure of the Corporate online store. 
+EOS-Procurement – unified industry Procurement system of Rosatom state Corporation – 
+an internal system designed to generate needs and then send it to the Corporate online store of 
+Rosatom group. 
+Order – a proposal addressed by the Customer to the Supplier, formed on the basis of a 
+published request for the delivery of goods, performance of work, provision of services, containing 
+information and data provided for in these Regulations. 
+Customer – an organization of the nuclear industry that is the owner of funds or their legal 
+administrator, whose interests are represented by managers (or their proxies) who are entitled to 
+make transactions (conclude contracts) on its behalf. 
+Small volume purchase – the Customer purchases goods, works, and services specified in 
+the Regulations, instructions, and other documents of the Customer. 
+Tap request – a request for detailed information about a product or service, formed on the 
+basis of the GPP, which the Customer sends to Suppliers who are legally able to supply the 
+required products. The result of the tap request is a sample of the tap provided to the Customer by 
+means of the COS for further analysis and selection of the most favorable conditions for 
+purchasing. 
+Request for processing – item of goods, works, services sent by the Supplier To the 
+Department of reference information for their classification, normalization and further inclusion 
+of items in the Directory of COS items. 
+Corporate online store «Rosatom» (COS) – a corporate online store (hereinafter referred 
+to as COS) located in the Internet information and telecommunications network at the address: 
+
+--- Page 4 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+4 
+ 
+https://kim-atom.roseltorg.ru/ ensuring the implementation and conduct of procurement 
+procedures and other actions provided for in these Regulations. 
+Classifier – a systematized list of types of goods, works, and services, each of which is 
+assigned a specific code and / or code, and provides the ability to quickly and easily search for 
+positions in the price lists of Suppliers. 
+Classification – the process of systematization of units of goods, works, services by their 
+similarity or difference, selected from the corresponding category (class, subclass, group, 
+subgroup, type) Classifier for the Supplier position. 
+Participation fee – funds that are blocked when submitting a response to a Need as security 
+for the offer for all Participants and that are charged from the personal account of the only Supplier 
+who won the Need. 
+The Corporation – the state atomic energy Corporation Rosatom. 
+Personal account (sub – account of available funds) – an account opened by the 
+Department of attracting and supporting COSS based on the Supplier's application sent to the 
+Department of attracting and supporting COSS during the accreditation procedure in the corporate 
+online store. 
+The LSA – local standard acts of organizations of the nuclear industry. 
+NMC – the initial maximum price of the contract / offer. 
+Normalization – the process of bringing the names of goods, works, and services of a 
+Supplier to a uniform system for describing their main properties and technical characteristics. 
+Position processing – carrying out the procedure of classification and normalization of the 
+position in accordance with these Regulations. 
+Department of attraction and support of COS – the Department of attraction and support 
+of a corporate online store that provides information support to Customers and Suppliers 
+(hereinafter referred to as COS OPS) provided by ETP. 
+Offer – an offer regarding the subject of purchase, which the Supplier provides to the 
+Customer on Need in accordance with these Regulations. 
+Normalization fee – payment from Suppliers for bringing the OPC COS positions of the 
+Supplier's price list in accordance with the reference list of positions, classifier. 
+Confirmed order – an order containing information confirming the acceptance of the order 
+by the Supplier and the Customer. 
+Item – a record about a product, work, or service contained in the item directory, order, or 
+Supplier's price list. 
+
+--- Page 5 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+5 
+ 
+Supplier – any individual, individual entrepreneur or legal entity that is registered in the 
+COS and has placed a price list in it and participates in price requests. 
+Need – a procedure in which the Customer sends a request to the Supplier about the cost of 
+goods, performance of works, provision of services, containing information and data provided for 
+in this Regulation, and as a result of which the winner is determined by the participant whose offer 
+is more consistent with the Requirements of the customer's needs and interests. 
+Supplier's price list – a structured list of items reflected by the Supplier about the goods, 
+works, services sold, containing information about the range, prices, characteristics, minimum 
+standards for shipment of goods, works, services, images, descriptions, indicating the possible 
+address (region) of delivery and other information. 
+A draft order – a completed request sent by the Customer to a Supplier whose offer is more 
+in line with the requirements of the Customer's needs and interests, for consideration, study, and 
+approval. 
+Registration – creating a user account in the COS to gain access to your personal account. 
+The item directory – a COS directory containing information about goods, works, and 
+services that can be purchased through its functionality. 
+Technical failure – incorrect behavior of the software or hardware part of the COS. Non-
+compliance of the COS's behavior with the provisions of this Regulation. 
+Enhanced qualified electronic signature (EP) – an electronic signature confirmed by a 
+certificate from an accredited certification center. This signature is used to identify the person 
+signing the information. 
+DDoS attack – an attack on the COS in order to bring it to failure, that is, creating conditions 
+under which system users cannot access the resources provided by the system or this access is 
+difficult. 
+ 
+ 
+
+--- Page 6 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+6 
+ 
+2. GENERAL PROVISIONS 
+2.1. 
+This Regulation defines the processes of conducting small-volume procurement 
+procedures with NMC up to 3 million rubles with VAT in electronic form, as well as defines the 
+conditions for participation of the Parties in these procedures, regulates the relations that arise 
+between them. 
+2.2. 
+The Regulations are developed in accordance with the Constitution of the Russian 
+Federation, the Civil code of the Russian Federation, Federal law No. 223-FZ of July 18, 2011 «on 
+procurement of goods, works and services by certain types of legal entities», other Federal laws 
+and other regulatory legal acts of the Russian Federation. 
+2.3. 
+The Requirements Procedure is carried out in order to meet the needs of Customers 
+in goods, works, and services in a timely manner. 
+2.4. 
+Registration of the Customer and Supplier in the COS is free of charge. 
+2.5. 
+These Regulations contain the terms of the accession agreement in accordance with 
+article 428 of the Civil code of the Russian Federation. 
+2.6. 
+This Regulation is a public offer that Suppliers accept by filling out a questionnaire 
+and passing the registration (accreditation) procedure in the COS, which entails full agreement 
+with all the provisions of this Regulation and creates obligations to fulfill them. The consent of the 
+procurement entities to these Regulations is a full acceptance of their terms and conditions, 
+including the appendices in the version in force at the time of registration in the COS. 
+2.7. 
+Governing documents of procurement procedures low volume HSMC to 3 million 
+rubles in the electronic form placed on a site of purchases «Rosatom» at the address: 
+http://zakupki.rosatom.ru/?mode=CMSArticle&action=siteview&oid=608&returnurl=&node=af
+23. 
+2.8. 
+The parties that have acceded to the present Regulations, adopt further changes 
+(additions) made to the Regulations, in accordance with the terms hereof. 
+2.9. 
+Action hereunder may be terminated in the following cases: 
+2.9.1. 
+violation of the provisions of this Regulation by one of the participants in the 
+process; 
+2.9.2. 
+by agreement of the participants; 
+2.9.3. 
+end of registration (accreditation) period) Supplier in COS; 
+2.9.4. 
+in other cases, established by the legislation of the Russian Federation. 
+
+--- Page 7 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+7 
+ 
+2.10. 
+Termination of this Regulation does not release participants from fulfilling 
+obligations that arose before the specified day of termination of the Regulation, and does not 
+release them from liability for its non-performance or improper performance. 
+2.11. 
+Making changes and (or) additions in the present Regulations is carried out by the 
+representative of ETP. All current versions of the Regulations must be placed in the "knowledge 
+Base" on the website: https://www.roseltorg.ru/knowledge_db/kim/docs. All changes and (or) 
+additions made to these Regulations that are not related to changes in the current legislation of the 
+Russian Federation come into force and become mandatory from the moment the specified 
+changes and (or) additions are posted in the «knowledge Base» on the site: 
+https://www.roseltorg.ru/knowledge_db/kim/docs. 
+2.12. 
+All changes and (or) additions made to these Regulations in connection with 
+changes in the current legislation of the Russian Federation come into force simultaneously with 
+the entry into force of changes (additions) to the relevant regulatory legal acts. 
+2.13. 
+Any changes and/or additions to these Regulations from the moment of entry into 
+force shall apply equally to all participants in processes / procedures that have joined the 
+Regulations, including those who joined the Regulations earlier than the date of entry into force 
+of the changes (additions). 
+2.14. 
+All appendices, amendments and additions to this Regulation are an integral 
+part of it. 
+2.15. 
+The amount, terms and procedure for charging normalization fees and participation 
+fees from Suppliers under concluded contracts in the COS are established by these Regulations. 
+ 
+
+--- Page 8 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+8 
+ 
+3. RIGHTS AND OBLIGATIONS OF THE PARTIES 
+3.1. 
+ETP is obliged to: 
+3.1.1. 
+Provide COS services in accordance with these Regulations and the current 
+legislation of the Russian Federation through the client-server application of ETP. 
+3.1.2. 
+Ensure the operation and functioning of the COS in accordance with the procedure 
+established by the current legislation of the Russian Federation and these Regulations. 
+3.1.3. 
+Ensure the continuity of the requirements, the reliability of the software and 
+hardware used for the requirements, as well as ensure equal access to Suppliers and Customers to 
+the needs carried out in the COS, depending on their role. 
+3.1.4. 
+From the moment of confirmation of accreditation (re-accreditation) in the COS as 
+a Supplier, provide the Supplier with access to participate in all needs held in the COS, confirm 
+orders and conclude contracts (https://www.roseltorg.ru/kim/atom). 
+3.1.5. 
+From the moment of registration of a legal entity in the COS as a Customer, provide 
+the Customer with access to the functionality for posting information about needs and orders. 
+3.1.6. 
+To ensure that accredited Providers in accordance with these Regulations. 
+3.1.7. 
+Provide the procedure for participation in Needs and orders to registered / 
+accredited parties to these Regulations who have rights in accordance with the authority granted 
+to them. 
+3.1.8. 
+Provide the ability to view data on non-confidential needs for unregistered users 
+through the open part of the COS. 
+3.1.9. 
+Charge a Commission for participation from the Supplier who provided the best 
+offer in response to the need, at the time of conclusion of the contract sent by the Customer. The 
+participation fee is the payment for winning the Game. The fee for each concluded contract is 1% 
+of the amount of the concluded contract, but not more than 5,520 (five thousand five hundred and 
+twenty) rubles, including VAT. The fee includes the amount of value added tax at the tax rate 
+established by the legislation of the Russian Federation. 
+3.1.10. Block available funds on the personal account (sub-account) The amount as security 
+for the offer at the time of the Supplier's response to the Request, equal to the participation fee 
+charged to the Supplier at the time of conclusion of the contract in accordance with clause 3.1.9 of 
+these Regulations. 
+3.1.11. In the absence on the personal account (sub-account available funds) Vendor 
+amount sufficient for submission of an offer, to accept Vendor's offer with the ability to authorise 
+the Supplier to the extent specified in clause 3.1.9 hereof, with a negative balance, and transmit 
+
+--- Page 9 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+9 
+ 
+the offer for consideration to the Customer, provided that the account balance is greater than zero. 
+In this case, the negative balance on the personal account (sub-account of available funds) The 
+supplier must not exceed the amount specified in clause 15.10.3 of these Regulations. 
+3.1.12. Charge a fee from the personal account (sub-account of available funds) Supplier 
+for normalization of the Supplier's price list by the NSI analyst in the amount of 100 (one hundred) 
+rubles for one position of the application at the time when the Supplier sends the NSI analyst an 
+application for normalization. The fee includes the amount of value added tax at the tax rate 
+established by the legislation of the Russian Federation. By submitting a request for processing a 
+position, the Supplier agrees to the unconditional debiting of funds from its personal account (sub-
+account of available funds). Independent maintenance of the price list by the Supplier is carried 
+out according to the reference list of items. 
+3.1.13. Stop blocking (unblocking) funds blocked on the personal account (sub-account of 
+available funds) In accordance with clause 3.1.10 of these Regulations, if the Supplier decides to 
+withdraw the offer. Funds are subject to unblocking at the time of withdrawal of such an offer by 
+the Supplier. 
+3.1.14. Stop blocking (unblocking) funds blocked on the personal account (sub-account of 
+available funds) Provider, in accordance with section 3.1.10 hereof, if upon review of the offer by 
+the Customer to such Supplier has not been selected for the contract. Funds are subject to 
+unblocking when the order is transferred to the archive. 
+3.1.15. Do not re-block funds on the personal account (sub-account of available funds) The 
+supplier, in accordance with clause 3.1.10 of these Regulations, when submitting an offer by the 
+Supplier as a response to the Customer's Need to reduce the price. 
+3.1.16. In accordance with the procedure provided for in clause 15.12.1 of these 
+Regulations, set: 
+3.1.16.1. the vendor selected for the order confirmation on the outcome of his offer by the 
+Customer, the act of services rendered and an invoice for the amount of fees for participation, 
+which is the charge for victory in Need, in the amount specified in clause 3.1.9 hereof, at the time 
+of confirmation of the order sent by the Customer, or in the cases specified in clause 3.2.3 of this 
+schedule, on the next working day after the specified in this paragraph; 
+3.1.16.2. to the Supplier who sent the request for normalization to the NSI analyst, the act of 
+services rendered and the invoice for the amount of the normalization fee provided for in clause 
+3.1.12 of these Regulations at the time of sending the request for processing. 
+3.1.17. Check the availability and compliance with the requirements of these Regulations 
+of documents required for accreditation and registration of COS users. 
+
+--- Page 10 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+10 
+ 
+3.2. 
+ETP has the right to: 
+3.2.1. 
+Dispose of funds deposited by the Supplier as security for the offer in accordance 
+with these Regulations. 
+3.2.2. 
+In the case specified in clause 15.10.2 of these Regulations, carry out an additional 
+check. 
+3.2.3. 
+Do Not allow the Supplier to further participate in the needs of Customers, if there 
+are no available funds or there is a negative balance on the personal account (sub-account of 
+available funds) Provider's. 
+3.2.4. 
+Charge a Commission for participation from the personal account (sub-account of 
+available funds) Suppliers blocked as security for the offer, in accordance with clause 3.1.10 of 
+these Regulations, if the order was not confirmed by both parties, or was not rejected by one of 
+the parties, after the expiration of: 
+3.2.4.1. 7 (seven) calendar days from the date of transfer of the draft order for approval to 
+the Supplier; 
+3.2.4.2. 14 (fourteen) calendar days from the date of transfer of the draft order for approval 
+to the Customer. 
+3.2.5. 
+If the funds for debiting the participation fee specified in clause 3.1.9 of these 
+Regulations are on the personal account (sub-account of available funds) It is not enough for the 
+supplier to charge the participation fee specified in clause 3.1.9 of these Regulations at the first 
+replenishment of the Supplier's personal account for an amount sufficient to deduct the 
+participation fee. At the same time, ETP debits the participation fee specified in clause 3.1.9 of 
+these Regulations, from the personal account (sub-account of available funds) If there are no funds 
+on the Supplier's personal account, the balance will be negative until the corresponding account is 
+topped up. When adding funds to the account, the funds will be used to pay off the debt on the 
+negative balance. 
+3.2.6. 
+Unblock the Supplier's funds blocked on the personal account as security for the 
+offer, if the order was rejected by the Customer or the Supplier. 
+3.2.7. 
+At the time when the Supplier sends the regulatory and reference information to the 
+analyst of the request for processing, write off funds from the personal account (sub-account of 
+available funds) Supplier in the amount of the normalization fee provided for in clause 3.1.12 of 
+these Regulations. 
+3.2.8. 
+Do not accept a request for normalization if there are insufficient funds on the 
+personal account (sub-account of available funds) The supplier until the funds are credited in the 
+amount specified in clause 3.1.12 of these Regulations. 
+
+--- Page 11 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+11 
+ 
+3.2.9. 
+Perform Routine maintenance and make changes to the COS to ensure the quality 
+of services provided. ETP determines the specific date and time of Routine maintenance works 
+independently, but with mandatory notification of the users of the COS by placing information in 
+the open part of the COS with the exact date and time of their start and end. 
+3.2.10. Carry out restoration work in the event of emergency situations that lead to the 
+inability to access the COS, namely: 
+− 
+technical failure; 
+− 
+DDoS-attack; 
+− 
+other emergency situations. 
+3.2.11. In case of emergency situations in the COS, ETP independently determines the time 
+and date of the start and end of work to eliminate the emergency situation, but with mandatory 
+notification of THE COS users. If the specified conditions are met, for the period of routine 
+Maintenance and restoration work, ETP has the right to refuse actions related to the placement and 
+conduct of services. 
+3.2.12. Without additional notice, write off funds from the Participant's Personal Account 
+(from the Free Funds Sub-Account) to pay off the Participant's debt to JSC "EETP" for payment 
+of goods and (or) services of the Operator and other obligations that arose by virtue of the 
+Participant's agreement with JSC "EETP", until it is paid off in full.  
+3.2.13. Perform other actions that do not contradict the current legislation of the Russian 
+Federation and these Regulations. 
+3.3. 
+When submitting an offer the Supplier shall: 
+3.3.1.1. If, as a result of deduction (debiting) of funds as a Commission for participation 
+provided for in clause 3.1.9 of these Regulations, the Supplier's account balance has become 
+negative, pay off the debt to ETP within 3 (three) business days from the date of debiting the fee. 
+3.3.2. 
+Use only the software provided for in these Regulations when accessing the COS 
+address on the Internet using one of the most common web browsers, including Internet Explorer 
+8.0 and higher, Mozilla FireFox 12.0 and higher, Google Chrome 28.0 and higher, Opera 18.0 and 
+higher, Safari 5.0 and higher. Modification of the code of the client part of the ETP application 
+and / or use of special software and hardware is not allowed. 
+3.3.3. 
+Do not allow the submission of offers in violation of the procedure provided for in 
+the Regulations. 
+3.3.4. 
+Do not allow the Supplier's equipment to transmit meaningless or useless 
+information that creates a parasitic load on the server part of the ETP application. 
+
+--- Page 12 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+12 
+ 
+ 
+
+--- Page 13 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+13 
+ 
+4. ACCREDITATION OF ORGANIZATIONS 
+4.1. 
+To ensure access to the organization, conduct, and placement of needs and offers, 
+the organization must pass accreditation. 
+4.2. 
+To participate in the placement of offers as a Supplier, the organization must have 
+the appropriate accreditation in the COS. 
+4.3. 
+To accommodate the needs and orders as Customer's organization needs to obtain 
+the appropriate accreditation in KIM. 
+4.4. 
+The procedure for obtaining accreditation and registration consists of two stages: 
+4.4.1. 
+Registration of a new user in the COS and activation of the email address; 
+4.4.2. 
+Submitting an application for accreditation of an organization in the COS as a 
+Customer or Supplier. 
+4.5. 
+When applying for accreditation of an organization that was not previously 
+accredited in the COS, the user must indicate: 
+4.5.1. 
+Full name of the organization; 
+4.5.2. 
+TIN of the organization; 
+4.5.3. 
+User Data: last name, first name, patronymic, email address, phone number, time 
+zone, username, password. 
+4.6. 
+The application for accreditation will be considered after confirmation of the email 
+address. The activation code (confirmation) will be contained in an email sent to the email address 
+specified when filling out the application for accreditation of the organization. 
+4.7. 
+When clicking on the link from the email, the user also specifies the legal address, 
+postal address and Bank details. Other information in the organization's accreditation application 
+is filled in by the user according to the list of fields in the accreditation application form. 
+4.8. 
+To receive accreditation as a Customer as part of the application should send 
+electronic copies of the following documents: 
+4.8.1. 
+Copy of extract from the unified state register of legal entities (for legal persons), 
+copy of extract from unified state register of individual entrepreneurs (for individual 
+entrepreneurs) obtained no earlier than six months prior to the day of filing an application for 
+accreditation. 
+4.8.2. 
+Copy of passport (for individuals). 
+4.8.3. 
+Copies of documents confirming the authority of the head (for legal entities) – a 
+decision on the appointment or election of a person to a position in accordance with which such 
+person has the right to act on behalf of the organization (hereinafter – the head). If a different 
+
+--- Page 14 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+14 
+ 
+person acts on behalf of the Customer, power of attorney is also submitted, indicating the right to 
+publish information about placing an order for the supply of goods, performance of works, 
+provision of services for the needs of the organization on behalf of the Customer, certified by the 
+organization's seal and signed by the head or an authorized person. If the power of attorney signed 
+by a person authorized by the supervisor, must be submitted copy of the document confirming 
+powers of the person, stamped by organization and signed by the head of the organization. 
+4.9. 
+Applying for accreditation in KIM is performed independently in a private office. 
+4.10. 
+For accreditation as a Provider must choose a type of organization, different 
+organizational and legal form: the legal entity (registration in Russia/other countries), physical 
+person (registered in the Russian Federation/other countries), or an individual entrepreneur 
+(registration in Russia/other countries). During accreditation, you must also indicate your 
+affiliation with small and medium-sized businesses. Application form for accreditation are 
+attached the following documents: 
+4.10.1. The application for registration. 
+4.10.2. Application for opening an account. 
+4.10.3. A Copy of an extract from the unified state register of legal entities (for legal 
+entities), a copy of an extract from the unified state register of individual entrepreneurs (for 
+individual entrepreneurs), received no earlier than 6 (six) months before the date of applying for 
+accreditation. 
+4.10.4. A copy of constituent documents (for legal entities). 
+4.10.5. Passport copy (for individual entrepreneurs and other physical persons). 
+4.10.6. Copies of documents confirming the authority of the head (decision on the 
+appointment or election of a person to a position in accordance with which such person has the 
+right to act on behalf of the organization), certified by the organization's seal and signed by the 
+head or an authorized person (for legal entities). 
+4.11. 
+The List and completeness of documents must be sent as part of the application for 
+accreditation as a Supplier to the COS. 
+4.12. 
+When forming applications for accreditation in the COS, it is possible to save data 
+in a draft, for subsequent correction and sending it for consideration to the COS OPS. Return to 
+the saved data of the application for accreditation is performed automatically when logging in to 
+the user's personal account, using the username and password specified by the user when 
+registering the account. 
+4.13. 
+When submitting an application for accreditation, the Supplier agrees to 
+unconditionally debiting funds from its personal account (sub-account of available funds), in the 
+
+--- Page 15 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+15 
+ 
+amount of a fee, in accordance with clauses 3.1.9, 3.1.12 of these Regulations, and also confirms 
+familiarization with the Regulations and working conditions in the COS. 
+4.14. 
+Consideration of applications for accreditation is carried out by a specialist of the 
+COS OPS within no more than 5 (five) business days from the date of acceptance of documents 
+and information required for accreditation (applications for accreditation). 
+4.15. 
+As a result of consideration of the application for accreditation, a notification is sent 
+to the organization's email address about the decision made by the COS OPS specialist regarding 
+such an application for accreditation. 
+4.16. 
+In the case of adoption specialist OPS KIM's decision to deny the accreditation (if 
+accreditation application form issued with violation of the provisions hereof or applicable law), 
+the notification contains the name of the corporate online store the date and time of receipt of the 
+application, the date and time of the decision on refusal in accreditation, grounds for refusal of 
+accreditation. 
+4.17. 
+The COS OPS refuses accreditation: 
+4.17.1. If the organization fails to provide the documents and information specified in 
+clause 4.8, clause 4.10 of these Regulations. 
+4.17.2. In case of submission of documents that do not meet the requirements established 
+by the legislation of the Russian Federation and the provisions of these Regulations. 
+4.18. 
+In case of acceptance by the specialist of OPS KIM of the decision on accreditation 
+of the Customer/The COS OPS provider gives the user full access to the COS, creates a personal 
+account, which can be entered using identification data (username, password). 
+4.19. 
+If the COS OPS specialist decides to refuse accreditation, the organization has the 
+opportunity to re-fill out the application form for re-sending. 
+4.20. 
+If the COS OPS specialist makes a decision on the Supplier's accreditation, after 
+confirming the application for accreditation, a package with data on the accredited organization is 
+transmitted from the COS to the EOS-Procurement. 
+4.21. 
+The person benefiting from the right to undergo the procedure of accreditation, has 
+a further status of «Administrator». 
+4.22. 
+Accreditation in KIM as a Provider is available on an ongoing basis since the OPS 
+KIM notice of the decision on accreditation in KIM to the Supplier. 
+4.23. 
+Accreditation in the COS as a Customer is provided on a permanent basis from the 
+moment the COS OPS sends notification of the decision on accreditation in the COS to the 
+Customer. 
+
+--- Page 16 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+16 
+ 
+4.24. 
+An Organization that has received Supplier accreditation in the COS has the right 
+to participate in all needs held in the COS. 
+4.25. 
+If the organization's name, TIN, or OGRN is changed, the organization must 
+undergo a re-accreditation procedure. 
+4.26. 
+The Organization must immediately send new documents and information to the 
+COS OPS in the event of changes, replacement or termination of the documents provided for in 
+these Regulations. 
+4.27. 
+Changes to information about an accredited organization are made by the 
+Administrator in the personal account of the organization's Administrator. 
+4.28. 
+Registration of new users of already accredited organizations is carried out by 
+submitting an application for registration. 
+4.29. 
+When applying for registration, the new user shall state: 
+4.29.1. E-mail address; 
+4.29.2. Password; 
+4.29.3. When registering, the user confirms consent to the processing of personal data, the 
+fact of familiarization with the privacy policy. 
+4.29.4. The application for registration is considered by the specialist OPS KIM after 
+confirming your email address. The activation code (confirmation) will be contained in an email 
+sent to the email address specified when filling out the application for registration of a new user. 
+4.30. 
+To activate e-mail, the user must specify the following information: full name, 
+phone number, time zone, TIN of the organization. 
+4.31. 
+Binding of each specific user to an organization accredited in the COS is carried 
+out according to the organization's TIN. 
+4.32. 
+If the organization is not found during identification by TIN, the system displays a 
+message about the need to pass the accreditation of the new organization in the COS. 
+4.33. 
+As a result of consideration of the registration application, a notification of the 
+decision taken in relation to such a registration application is sent to the user's email address. 
+4.34. 
+If the COS OPS specialist (or the organization's administrator) makes a decision to 
+refuse registration, the COS OPS specialist (the organization's administrator) prescribes the reason 
+for rejection, if the user was added to the organization independently. If the user was added by an 
+OPS KIM specialist, then if the OPS KIM specialist decides to refuse, the user is automatically 
+assigned standard roles. The user can re-fill in the application form to send it again. 
+ 
+ 
+ 
+
+--- Page 17 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+17 
+ 
+5. PRINCIPLES OF WORKING IN A CORPORATE ONLINE 
+STORE 
+5.1. 
+The purpose of publishing a need through the COS is for the Customer to receive 
+offers from Suppliers about the cost of goods, performance of works, and provision of services, 
+followed by selecting a Supplier and forming an order. 
+5.2. 
+To ensure and maintain the classifier and the reference list of positions in an up-to-
+date and stable state, the Department of reference information management approves the 
+appropriate instructions and guidelines for using the COS functionality. All current instructions 
+and guidelines for using the COS functionality, as well as guidelines for normalizing the Reference 
+list 
+of 
+positions, 
+are 
+posted 
+in 
+the 
+«knowledge 
+Base» 
+on 
+the 
+site: 
+https://www.roseltorg.ru/knowledge_db/kim/docs. 
+5.3. 
+In order to comply with the Regulations when working in the COS, Suppliers and 
+Customers are required to perform the necessary actions in a timely manner (in accordance with 
+these Regulations) to transfer the procedure to the next stage. 
+5.4. 
+The Exchange of information between the Customer and the Supplier, sending 
+requests, receiving offers, placing an order by e-mail, telephone, postal or other means of 
+communication, excluding COS, is not allowed. 
+5.5. 
+Actions (omissions) committed by the Supplier or Customer in the COS are 
+recognized as actions of the relevant Supplier or Customer and give rise to the corresponding rights 
+and obligations for him. 
+5.6. 
+Information about the procedures performed is indicated in Russian, except for 
+cases when the use of Cyrillic alphabet characters leads to distortion of the published information 
+(email address, website, etc.). in this case, the use of Latin alphabet characters is allowed, and 
+digital details are displayed in Arabic numerals. 
+ 
+ 
+
+--- Page 18 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+18 
+ 
+6. RULES OF WORK IN THE CORPORATE ONLINE STORE 
+6.1. 
+The procedure in the form of a need for COS is understood as a purchase in which 
+the Customer sends a request for the cost of goods, performance of works, provision of services to 
+Suppliers. On the basis of Supplier offers provided within a period not exceeding the period 
+specified in the publication of the procedure by the Customer, the Customer selects the Supplier, 
+and, if it meets the Customer's requirements, enters into a corresponding contract for the supply of 
+goods, performance of works or provision of services. 
+6.2. 
+The procedure of publishing Needs carried out by the Commission of the actions 
+provided for in this Regulation in two phases, which include: first stage – formation Requirements 
+on the basis of the AGM-procurement, the direction of the Needs of the EOS-procurement to KIM, 
+receipt of Offers from Vendors, unloading of vendor proposals, request for price reduction to 
+Suppliers, selection of winner, request for lower prices with information about beneficiaries to the 
+winner; the second stage – placing an order, sending to the EOS-procurement a selection of offers 
+indicating their initial prices and final prices, transmitting from the EOS-procurement to the COS 
+a Protocol on the selection of the winner, creating a draft agreement in the COS to the Winner, 
+receiving from the EOS-procurement a contract for conducting purchases in the COS for signing, 
+transmitting information about the signatories to the EOS-procurement. 
+6.3. 
+The selection of items of the necessary goods, work, and services for the purchase 
+is made by the Customer by processing the request and transmitting a selection of the existing 
+COS TCH database to the EOS-purchases. The selection is formed according to the following 
+parameters: 
+6.3.1. 
+If the request passed a sign that analogs are not considered, then the selection must 
+be formed according to the following conditions: 
+6.3.1.1. the offer corresponds to the material provided in the request; 
+6.3.1.2. match the unit of measure delivery; 
+6.3.1.3. the same as the delivery address; 
+6.3.1.4. it is possible to supply in the requested quantity. 
+6.3.2. 
+If the request indicates that the offer of analogues is acceptable, the selection must 
+be formed according to the following conditions: 
+6.3.2.1. the final category of the offer corresponds to the category specified in the request; 
+6.3.2.2. match the unit of measure delivery; 
+6.3.2.3. technical characteristics match (attribute composition); 
+6.3.2.4. the same as the delivery address; 
+
+--- Page 19 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+19 
+ 
+6.3.2.5. it is possible to supply in the requested quantity. 
+6.4. 
+The selection of offers should include offers from Suppliers only from current price 
+lists. 
+6.5. 
+The results of the selection of positions are available to the Customer in the form 
+of a list of positions with information from the Suppliers ' price lists provided for in clause 9.7 of 
+these Regulations. The positions selected by the Customer based on the results of the selection of 
+positions are the basis for forming the Need through the COS. The customer has the right to specify 
+priority items in the Request. 
+6.6. 
+It is Not allowed for the Customer to include items belonging to different 
+nomenclature groups of the Classifier in the list. 
+6.7. 
+The need contains the following information: 
+6.7.1. 
+name of the product, work, service from the List of items and its description, 
+characteristics; 
+6.7.2. 
+unit of measurement; 
+6.7.3. 
+the quantity of goods, works, services; 
+6.7.4. 
+minimum rate of shipment of goods, work, services; 
+6.7.5. 
+the cost of goods, works, services with the indication of value added tax, in 
+accordance with the price per unit of goods specified in the Supplier's price list; 
+6.7.6. 
+place (address) and terms of delivery (delivery of goods, performance of work, 
+provision of services); 
+6.7.7. 
+payment terms and conditions; 
+6.7.8. 
+special conditions, comments (if necessary); 
+6.7.9. 
+term of delivery of goods, performance of work, rendering of services; 
+6.7.10. term of sending the offer to the customer. 
+6.8. 
+In the Customer's needs form, prices from the price lists of all Suppliers of the 
+selected goods, works, and services are indicated. 
+6.9. 
+The customer sets a deadline for bids on the publication requirements, which shall 
+not be less than 2 (two) working days from the date of need. 
+6.10. 
+After forming the need, the Customer sends it to the Suppliers via the COS. 
+6.11. 
+Sending and carrying out a request does not give rise to an unconditional obligation 
+for the Customer to conclude a contract with one of the Suppliers who sent their offer. The 
+customer has the right to accept one of the received offers or reject all received offers. 
+6.12. 
+Suppliers who have received a request have the right to agree with it and provide 
+information in accordance with clause 6.14 of these Regulations. 
+
+--- Page 20 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+20 
+ 
+6.13. 
+The Supplier must submit an offer in response to the need for all priority items 
+specified by the Customer, for other items that are not priority, the offer is submitted at the 
+discretion of the Supplier. 
+6.14. 
+The supplier in the offer must fill in the appropriate cells of the form containing the 
+following information: 
+6.14.1.  price per unit of goods, works, services, including value added tax; 
+6.14.2.  the shipping cost of the order with respect to value added tax; 
+6.14.3. order, conditions and cost of delivery of the goods; 
+6.14.4. actual time of delivery of the goods, performance of work, provision of services, 
+but not later than the date specified by the Customer; 
+6.14.5. special conditions, Supplier's comments (if necessary). 
+6.15. 
+A supplier that has submitted an offer in accordance with clause 6.13 of these 
+Regulations has the right to refuse to submit an offer, within the period established by the Customer 
+to respond to the Supplier's need in accordance with clause 6.9 of these Regulations. 
+6.16. 
+When considering offers submitted in accordance with clause 6.13 of these 
+Regulations, the Customer has the right to send a request to reduce the price and provide 
+information about the beneficiaries to the Suppliers with an indication of the response time to such 
+a request. 
+6.17. 
+Suppliers who have received a request for a price reduction may agree to it and 
+provide information about the reduced offer in accordance with clause 6.14 of these Regulations, 
+information about the beneficiaries, within the period established by the Customer to respond to 
+the request for a price reduction in accordance with clause 6.16 of these Regulations. 
+6.18. 
+Based on the results of reviewing the offers and information about the beneficiaries, 
+the Customer independently selects the Supplier whose offer meets the requirements of the 
+Customer's needs and interests to a greater extent, then forms a draft order and sends it to this 
+Supplier for confirmation. 
+6.19. 
+If the information provided by the Supplier about the beneficiaries, in accordance 
+with clause 6.17 of these Regulations, is not up-to-date, the Customer confirms that the 
+information provided by such Supplier is not up-to-date and proceeds to form a draft order with 
+the Supplier next in the ranking. 
+6.20. 
+The pre-order form contains the following information: 
+6.20.1. order number; 
+6.20.2. Supplier's name and TIN; 
+6.20.3. Customer's name and TIN; 
+
+--- Page 21 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+21 
+ 
+6.20.4. order status; 
+6.20.5. date of order creation; 
+6.20.6. price per unit of goods, works, services, including value-added tax for each item; 
+6.20.7. quantity of goods, works, services for each item; 
+6.20.8. the cost of goods, performance of work, provision of services for each item, 
+including value-added tax; 
+6.20.9. place (address) and date of delivery (delivery of goods, performance of work, 
+provision of services); 
+6.20.10. special conditions (if necessary); 
+6.20.11. draft contract for the supply of goods, performance of work, provision of services 
+(if necessary); 
+6.20.12. payment and delivery terms; 
+6.20.13. the cost of delivery subject to the value added tax; 
+6.20.14. the total cost of the order with respect to value added tax. 
+6.21. 
+Upon receiving the draft order, the Supplier reviews it and makes one of the 
+following decisions: confirms the draft order or rejects it. 
+6.22. 
+The Supplier is obliged to make a decision and inform the Customer about the draft 
+order within 2 (two) business days from the date of sending the draft order by the Customer. 
+6.23. 
+When you reject a draft order, the Supplier is obliged to provide reasoned reasons 
+and grounds for rejection of the order. 
+6.24. 
+If the Provider accepts the terms of the order, he takes the order, prepares, confirms 
+its functionality by KIM within a period not later than 2 (two) working days of its receipt, and 
+sends an order confirmation to the Customer. 
+6.25. 
+No more than 2 (two) orders can be created for one need. If the 1st (first) order was 
+not approved by the Supplier or the Customer, the Customer can create the 2nd (second) order. If 
+the 2nd (second) order is not approved by the supplier or customer, then you can no longer create 
+orders for this need – the need goes to the status “Waiting for termination protocol”. To 
+successfully complete the purchase, you must create a new requirement. 
+6.26. 
+The Customer has the right to confirm or reject an order confirmed by the Supplier 
+with a reasoned reason for rejection, in which case the Customer does not bear any responsibility 
+to the Supplier. 
+6.27. 
+Supplier and Customer may not amend a confirmed order by both parties, with the 
+exception of information relating to the status of the order, and the information (copies of 
+
+--- Page 22 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+22 
+ 
+documents) confirming the fact of delivery of goods, performance of works, rendering of services 
+for the Customer. 
+6.28. 
+The order Form issued and confirmed by the Supplier and the Customer is the basis 
+for concluding the relevant agreement, as well as an Appendix to it. 
+
+--- Page 23 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+23 
+ 
+7. CLASSIFIER 
+7.1. 
+The COS Classifier is based on data from the all-Russian classifier of economic 
+activities (OKVED 2) and the all-Russian product classifier (OKPD 2). 
+7.2. 
+The Classifier consists of categories. At the same time, each lower category 
+contains a set of characteristics (attributes) intended to describe the properties of the product (work, 
+service) belonging to the specified category. 
+7.3. 
+NSI Analysts are required to keep the Classifier up-to-date and review Vendor 
+requests for changes or additions. 
+7.4. 
+The Supplier has the right to initiate the process of changing the Classifier category 
+in terms of adding, deleting or changing the category characteristics. 
+7.5. 
+The analyst of MDM considers the application received for a change in the 
+characteristics of the documents within 5 (five) working days. 
+7.6. 
+The NSI Analyst has the right to change the characteristics of the Classifier category 
+proposed by the Supplier. 
+7.7. 
+The NSI Analyst has the right to refuse to accept a new or change an existing 
+characteristic of the Classifier category. 
+7.8. 
+In case of successful adoption (acceptance) of the new characteristics of the service 
+Provider may use this category to describe qualitative and (or) functional characteristics according 
+to their price list. 
+
+--- Page 24 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+24 
+ 
+8. POSITION REFERENCE 
+8.1. 
+The reference list of positions is a single database of positions for forming price 
+lists of Suppliers and for searching for goods, works and services when publishing a need. 
+8.2. 
+The Department of reference information management is obliged to keep the 
+reference List of items up-to-date and review requests for processing and approval in order to 
+constantly increase the number of items that may be the object of the order. The Department of 
+normative and reference information provides the unity of the processes of classification and 
+normalization, which eliminates errors, incomplete and incorrect data are identified and eliminated 
+duplication, obsolescence of the position, clarifies the composition and the values of key 
+parameters, and are made to standardize items. 
+8.3. 
+The Supplier has the right to add a new item to the List of items by submitting an 
+application for processing or an application for approval to the NSI analyst. 
+8.4. 
+The Procedure for submitting applications for processing or approval is regulated 
+by the instructions of the NSI analyst posted in the "knowledge Base" on the website: 
+https://www.roseltorg.ru/knowledge_db/kim/docs in the corresponding section. 
+8.5. 
+The Qualitative and (or) functional characteristics of a position are described solely 
+on the basis of the provided characteristics of the corresponding Classifier category. 
+8.6. 
+When creating a new position in the Reference list of positions, it is forbidden to 
+offer units of measurement other than those of the OKEI (all-Russian classifier of units of 
+measurement). 
+8.7. 
+The Request for processing or approval sent to the analyst of normative reference 
+information is assigned an individual number, which is issued to the Supplier. 
+8.8. 
+The NSI Analyst processes the items included in the request for processing, then 
+makes changes to the list of items, and then sends a corresponding notification to the Supplier. 
+ 
+ 
+
+--- Page 25 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+25 
+ 
+9. SUPPLIER'S PRICE LIST 
+9.1. 
+The Supplier creates its own price list in the Personal account of the Corporate 
+online store. 
+9.2. 
+If it is necessary to make changes or additions to the price list, the Supplier has the 
+right to submit a corresponding application in accordance with these Regulations, or, in agreement 
+with the NSI analyst, to enter additional information. 
+9.3. 
+The Supplier has the right to create and maintain only one price list, and the NSI 
+analyst does not limit the number of positions in it. 
+9.4. 
+If the list of items contains a suitable item to add to the Price list, the Supplier has 
+the right to use it without the consent of the NSI analyst. 
+9.5. 
+If the list of products does not contain a suitable item to add to the price list, the 
+Supplier has the right to initiate the addition of a new item by submitting an application for 
+processing or an application for approval. 
+9.6. 
+The cost of the item specified in the price list of the Supplier, is required, the 
+proposed (tentative) and may be changed by the Vendor when submitting the offer. 
+9.7. 
+Each item in the Supplier's price list contains the following information: 
+9.7.1. 
+item code in the item Directory; 
+9.7.2. 
+internal position code of the Supplier specified in the request for 
+processing/approval; 
+9.7.3. 
+classifier category code; 
+9.7.4. 
+name of the Classifier category; 
+9.7.5. 
+internal name of the item specified by the Supplier; 
+9.7.6. 
+name of the position in the list of positions; 
+9.7.7. 
+technical characteristics of the product, work or service; 
+9.7.8. 
+unit of measurement; 
+9.7.9. 
+the unit price of the goods excluding value added tax; 
+9.7.10. the rate of value added tax; 
+9.7.11. the unit price of the goods subject to the value added tax; 
+
+--- Page 26 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+26 
+ 
+9.7.12. minimum lot (minimum shipping rate, the number of units in it); 
+9.7.13. OKPD code 2; 
+9.7.14. OKVED code 2; 
+9.7.15. possible delivery regions; 
+9.7.16. updated (update). 
+9.8. 
+The analyst of normative reference information maintains a register of price lists of 
+Suppliers who have been registered in the COS. 
+9.9. 
+The Supplier has the right to add, change, update, delete information for each item 
+in the price list. 
+9.10. 
+Changing the information in the price list provided for in clause 9.7.2, 9.7.5, 9.7.9, 
+9.7.10, 9.7.11, 9.7.12, 9.7.15 this Regulation is made by the Supplier independently without the 
+approval of the NSI analyst. 
+9.11. 
+Changing the information in the price list provided for in clause 9.7.1, 9.7.3, 9.7.4, 
+9.7.6, 9.7.7, 9.7.8, 9.7.13, 9.7.14 this Regulation is made only by the NSI analyst. 
+9.12. 
+The Information provided for in clause 9.7.16 of these Regulations is changed 
+automatically after any changes are made. 
+ 
+ 
+
+--- Page 27 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+27 
+ 
+10. SIGNING A CONTRACT WITH A SUPPLIER IN A 
+CORPORATE ONLINE STORE 
+10.1. 
+The Contract is concluded with the selected Supplier via the COS functionality in 
+electronic form (using enhanced qualified electronic signatures of the improved format of the 
+parties) for a period of no more than 7 days from the date of placement of the procurement 
+Protocol. The customer uses the COS functionality to send the draft contract to the Supplier who 
+offered the lowest price. 
+10.2. 
+The customer through the functionality of the EOS-Procurement creates a draft 
+contract. 
+10.2.1. If necessary, the Customer uses the COS functionality to send the supplier a request 
+to clarify the details/payment details and/or the full name (position) of the signatory from the 
+supplier. The supplier sends to the Customer the specified details/payment details and/or full name 
+(position) from the Supplier's side no later than 3 (three) business hours according to the customer's 
+time from the moment of receiving the request via the COS functionality. 
+10.2.2. Other changes (other than the Supplier's details and the name of the signatory on 
+the supplier's Side, as well as corrections of technical errors) are not allowed in the draft agreement 
+concluded based on the results of an E-shop purchase. 
+10.3. 
+Using the EOS-Procurement functionality, the Customer sends the draft agreement 
+for further approval and signing within 1 business day. 
+10.4. 
+After the Customer signs the contract using the COS functionality with an 
+electronic qualified signature, the Supplier must sign the contract using the COS functionality with 
+an electronic qualified signature no later than 1 (one) business day after receiving the contract from 
+the Customer. 
+10.5. 
+In case the Supplier contract is signed by a person acting under a power of attorney, 
+the Provider applies to the contract a certified copy of the power of attorney on the basis of which 
+the person has the right to take appropriate actions with the Supplier. 
+10.6. 
+If the Supplier has not signed the contract within the time period specified in clause 
+10.4, this Supplier is deemed to have failed to fulfill its obligations in accordance with clause 23 
+of the notice/documentation on the purchase. The fact of non-fulfillment of the Supplier's 
+obligations is registered by the Customer's decision. The specified decision of the Customer is 
+posted on the official websites no later than one business day from the date of its adoption. 
+10.7. 
+In the case of recognition a Vendor won when ranking the first place, failed to 
+perform duties in accordance with clause 23 notices/documentation on purchase, the Customer 
+
+--- Page 28 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+28 
+ 
+may enter into a contract with a Supplier, who took second place in the procurement procedure, 
+provided that the price of the Supplier, which took the ranking in the second place, does not exceed 
+the NMC.If the price of the second-place Supplier exceeds the NMC, the contract with such 
+Supplier is not concluded. The customer, if necessary, makes a decision to purchase in another 
+way in the manner and on the grounds provided for by the EEA. 
+10.7.1. If necessary, the Customer sends an automated request for an additional price 
+reduction to the Supplier who took the second place in the ranking, as well as, if necessary, a 
+request for clarification of information about owners and beneficiaries (including end users) 
+Provider's. The decision of the customer contract with the Supplier is also in cases if the specified 
+Provider is not sent within the prescribed period response to request for additional reduction in the 
+price of the goods, provided that a response was received clarifying information on the ultimate 
+owners and beneficiaries (if you were sent the corresponding request). 
+10.8. 
+The Customer draws up a decision that reflects information about the Supplier who 
+failed to fulfill the obligations in accordance with clause 23 of the notice/documentation on the 
+purchase; about the second-place Supplier with whom the contract is concluded. The decision is 
+published on the official websites specified in the EEA, taking into account the requirements of 
+the legislation of the Russian Federation and administrative acts of the state Corporation Rosatom 
+for the protection of information constituting a state secret and other restricted access information 
+(article 6.2.1 of the EEA). 
+
+--- Page 29 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+29 
+ 
+11. LIABILITY OF THE PARTIES 
+11.1. 
+For non-fulfillment or improper fulfillment of the provisions of these Regulations, 
+users of the COS are responsible in accordance with the current legislation of the Russian 
+Federation. 
+11.2. 
+ETP is not responsible for any damages, losses, and other losses incurred by 
+Supplier, Customer by reason of violation of the requirements hereof, and also in the following 
+cases: 
+11.2.1. the lack of users KIM computer equipment with the necessary set of software and 
+hardware capabilities that meet the requirements to work in KIM; 
+11.2.2. the Presence of software and technical limitations and settings that were contained 
+in the computer equipment, which did not allow the Supplier or Customer to fully work in the 
+COS; 
+11.2.3. inability to work due to infection of computer equipment with viruses (in this case, 
+the COS does not pass any information from computers infected with computer viruses); 
+11.2.4. shortcomings in the operation of network systems and limitations, as well as failures 
+in the operation of the hardware and technical complex, which led to unregulated and unforeseen 
+temporary disconnections from the Internet and did not allow full operation in the COS. 
+11.3. 
+ETP is not responsible for any damage, losses and other losses incurred by users of 
+the COS due to improper study of information related to the work of the COS, such as: 
+11.3.1. Users of organizations accredited on the electronic trading platform as a Supplier/ 
+Customer do not Know the provisions of these Regulations, neglect and improper fulfillment of 
+all the requirements specified in these Regulations and applicable in the COS, which led to the 
+assumption of additional, unnecessary, increased and unplanned obligations and negatively 
+affected the commercial activity and business reputation of the organization. 
+11.3.2. Actions performed on the electronic trading platform by third parties due to their 
+incompetence and ignorance of these Regulations and the current legislation of the Russian 
+Federation, which led to the acceptance by users of additional, unnecessary, increased and 
+unplanned obligations to other users on the electronic trading platform. 
+11.4. 
+If the customer performed actions on the needs and orders not within the established 
+time limits provided for in the documentation and/or legislation, the Customer is liable in 
+accordance with the legislation of the Russian Federation. 
+11.5. 
+The Supplier is obliged to independently monitor the relevance of the details in the 
+personal account and make timely changes in order to prevent the fact of issuing an Act and invoice 
+
+--- Page 30 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+30 
+ 
+with outdated details. In case of untimely change of details in the personal account and untimely 
+notification of ETP, the Supplier is responsible for incorrectly issued Report and invoice. If a 
+request is received to issue corrected documents or provide duplicate documents, ETP may provide 
+these services on a paid basis and issue documents for payment for the services rendered. 
+ 
+ 
+
+--- Page 31 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+31 
+ 
+12. CONFIDENTIALITY 
+12.1. 
+The Parties do not have the right to disclose any confidential and/or proprietary 
+information of one of the parties to the Regulations. 
+ 
+ 
+
+--- Page 32 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+32 
+ 
+13. FORCE MAJEURE 
+13.1. 
+The Parties are released from liability for full or partial non-performance of the 
+obligations assumed under these Regulations, if such non-performance was the result of force 
+majeure, namely: natural disasters, epidemics, explosions, fires and other emergency 
+circumstances. In this case, the term of performance of obligations under these Regulations is 
+postponed in proportion to the time during which such circumstances were in effect. 
+13.2. 
+The Party for which force majeure has occurred must immediately notify the COS 
+OPS in writing of the occurrence, expected duration and termination of force majeure, as well as 
+provide evidence of these circumstances. 
+13.3. 
+Notification or untimely notification of the occurrence of force majeure 
+circumstances entails the loss of the right to refer to such circumstances. 
+ 
+ 
+
+--- Page 33 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+33 
+ 
+14. DISPUTE RESOLUTION 
+14.1. 
+In the event of a dispute, the parties to it are: ETP, the Supplier, the Customer, who 
+have joined this Regulation. 
+14.2. 
+The Parties shall make every effort to resolve all contradictions or disputes arising 
+between them within the framework of these Regulations in accordance with the current legislation 
+of the Russian Federation to their mutual satisfaction through direct negotiations. 
+14.3. 
+Any Party may request the resolution of an unsettled dispute in court, in accordance 
+with the current legislation of the Russian Federation. 
+ 
+ 
+
+--- Page 34 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+34 
+ 
+15. OPENING AND MAINTAINING COS OPS ACCOUNTS FOR 
+OPERATIONS TO ENSURE PARTICIPATION IN NEEDS 
+15.1. 
+Personal account (sub-account of available funds, hereinafter-Account) The 
+supplier's account, which is intended, inter alia, for operations related to charging the Supplier the 
+Commission for participation in the project and the normalization fee provided for in these 
+Regulations, is opened in the analytical accounting of ETP on the account of ETP opened in the 
+Settlement organization, when the Supplier is accredited in the COS. 
+15.2. 
+If the COS OPS makes a positive decision on the organization's accreditation as a 
+Supplier, the COS OPS opens the Supplier's Account based on the application for accreditation 
+submitted by the Supplier during the COS accreditation procedure. The application text is an 
+integral part of the documents and information submitted for accreditation (hereinafter referred to 
+as the application for accreditation). 
+15.3. 
+If a positive decision on accreditation is made, COS opens an Account to the 
+Supplier within 5 (five) business days from the date of receipt of the application for accreditation. 
+15.4. 
+COS OPS informs the Supplier about opening an Account by sending a notification 
+to the personal account and by e-mail about its accreditation on the electronic trading platform, 
+indicating the Account details. 
+15.5. 
+The Supplier's Account may be used for other purposes specified in the relevant 
+regulations of ETP and (or) provided for in other agreements with ETP. For these purposes, the 
+Supplier's Account may be divided into sub-accounts designed to account for the availability and 
+movement, including by blocking/unblocking (if necessary), the Supplier's funds deposited to such 
+an account. 
+15.6. 
+The Supplier specifies in the personal account data (details) of the Bank account to 
+which funds will be transferred from the Supplier's Account using the COS functionality. The date 
+of transfer of funds to the Supplier is considered to be the date when these funds are debited from 
+the account of ETP. 
+15.7. 
+In the Supplier's personal account, such a Supplier can monitor the balances and 
+history of operations on the Supplier's Account in real time. 
+15.8. 
+All transactions on the Supplier's Account are conducted in the currency of the 
+Russian Federation – rubles. Funds transferred only from the Supplier's current accounts are 
+credited to the Personal Account opened by the Operator and are accounted for in the Free Funds 
+Sub-Account. 
+
+--- Page 35 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+35 
+ 
+15.9. 
+Crediting funds received from a third party to the Supplier's Personal Account is 
+permitted in exceptional cases and only if there are legal grounds that can be documented. The 
+Supplier independently sends documents and information confirming the existence of such legal 
+grounds to the Operator. Receipt of funds to replenish the Personal Account of the Supplier - an 
+individual from his bank account opened for the Supplier as an individual entrepreneur (and vice 
+versa) is equivalent to a payment from a third party. 
+15.10. Transactions on the Supplier's accounts are performed within the time limits 
+established by these Regulations and in the following order: 
+15.10.1. ETP shall transfer funds to the Supplier's Account no later than 1 (one) hour after 
+ETP receives information from the settlement organization about the transfer of the corresponding 
+funds by the Supplier to the account of ETP. Data on the receipt of funds is updated by ETP on 
+business days in 10:00, 12:00, 15:30, 18:00 by the time of ETP. 
+15.10.2. In the cases provided for by these Regulations, the Operator debits funds from the 
+Supplier's Personal Account (Free Funds Sub-Account) and transfers the corresponding amount 
+of funds only to the Supplier's bank details specified in the Personal Account, while simultaneously 
+reducing the balance of funds on the Free Funds Sub-Account by the same amount Supplier if 
+there is an application for the transfer of funds from the Supplier indicating the amount of funds. 
+Funds are written off no later than 3 (three) business days from the day following the date of receipt 
+of the application for a refund. If there is a need for additional verification of the Supplier, this 
+return period may be extended to 5 (five) working days. However, such a write-off is not carried 
+out in the following cases: 
+- 
+the balance of funds accounted for in the Supplier's Free Funds Sub-Account is less than 
+the amount specified in the application; 
+- 
+the Supplier's bank details are not indicated in the personal account; 
+- 
+the presence on the date of consideration of the Participant's application of a debt of the 
+Participant to JSC "EETP" for payment for goods and (or) services of the Operator and 
+other obligations that arose by virtue of the Participant's agreement with JSC "EETP". In 
+this case, the Participant has the right to re-send to the Operator a request for transfer of 
+funds from the Personal Account.  
+15.10.2.1. 
+Refunds from the Supplier's Personal Account to the details of a current 
+account belonging to a third party are not made. Transfer of funds from the Supplier's Personal 
+Account to the details of a third party's current account is possible only upon a written request 
+from the Supplier to the Operator in exceptional cases if there are legal grounds for this, which can 
+be documented. The Supplier independently sends documents and information confirming the 
+
+--- Page 36 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+36 
+ 
+existence of such legal grounds to the Operator. In this case, the period for consideration of such 
+an appeal may be up to 30 (thirty) days. 
+15.10.3. If funds are blocked on the Supplier's Account as security for the offer, in 
+accordance with clause 3.1.10 of these Regulations, the negative balance on the personal account 
+(sub-account of available funds) The supplier may not exceed 5,520 (five thousand five hundred 
+and twenty) rubles. 
+15.10.4. If you have a negative balance in the Vendor Account OPS specialist KIM informs 
+about necessity of repayment of receivables through phone calls to the phone number of the 
+Provider, and also directs the email address of the Supplier a written request (notification) about 
+the need of accounts receivable showing the amount of debt and account details of ETP. The COS 
+OPS specialist sends such written requests (notifications) to the Supplier's email address until the 
+receivables on the Account are repaid. 
+15.10.5. The date of transfer of funds in cases stipulated by these Regulations is the date of 
+debiting these funds from the account of ETP. 
+15.10.6. In case of receipt on the settlement account of ETP, designed for operations to 
+ensure the participation needs and specified in the notice of accreditation of the Supplier (r/s 
+40702810600050001273 at VTB Bank (PJSC), BIK 044525187, k/s 30101810700000000187; 
+since 13.02.2021 r/s 40702810510050001273, Branch «Central» of VTB Bank (PJSC) in Moscow, 
+BIK 044525411, k/s 30101810145250000411) in cash with errors in the payment, not allowing 
+ETP to uniquely identify the payment and to make the credit received funds to the account of the 
+Supplier (incorrect account number, the account number does not belong to the payer of funds, 
+etc.) - these funds are not credited to the Supplier's personal account. Moreover, if the payer is 
+identified as a Supplier, EETP JSC has the right to send a request to the Supplier who transferred 
+the funds to provide clarification on the received payment by sending a request to the email address 
+specified in the Supplier’s accreditation data. If EETP JSC does not receive, within 2 (two) 
+business days from the day following the day of receipt of funds, from the payer a clarifying letter 
+signed in hand by a person who is authorized to act on behalf of the payer without a power of 
+attorney or by another person acting on the basis of a power of attorney from the specified person 
+(when sent in paper form), or by an electronic signature of a person who is authorized to act on 
+behalf of the payer without a power of attorney, or by another person acting on the basis of a power 
+of attorney from the specified person (when sent in the form of an electronic document), in relation 
+to such payment, monetary funds are returned by EETP JSC to the payment details of the payer 
+without additional notification of the latter, except for cases of offset of received funds to pay off 
+
+--- Page 37 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+37 
+ 
+debts to EETP JSC (including when the payer indicates in the purpose of payment information 
+about the paid services of EETP JSC) . 
+15.10.7. If the cash received from the Supplier, was withdrawn the settlement organization 
+from the account of ETP because of an error in the payment order of the Supplier, ETP writes off 
+the amount of specified funds from the account Provider not later than 2 (two) hours of receipt of 
+ETP information from the settlement organization about the withdrawal of these funds. 
+15.10.8.  Funds withdrawn by the settlement organization are debited from the Supplier's 
+Account. 
+15.10.9.  ETP blocks funds on the supplier's Account on the basis of Its offer at the time of 
+submitting such offer. 
+15.10.10. 
+Funds on the Supplier's Account are blocked in the amount of the offer 
+security established in clause 3.1.10 of these Regulations. 
+15.10.11. 
+Funds on the Supplier's Account are blocked by ETP separately for each 
+need. 
+15.10.12. 
+ETP unblocks funds on the account and (if necessary) debits these funds 
+from the Supplier's Account in accordance with these Regulations. 
+15.11. ETP ensures confidentiality in the process of opening and maintaining Supplier 
+accounts in analytical accounting and related document flow, including when interacting with the 
+settlement organization. 
+15.12. The procedure for maintaining accounts in accordance with the following formula: 
+15.12.1. In the case of a withdrawal under this section of the Regulations, as well as charging 
+you for the victory in the requirement and fees for the normalization, in accordance with section 3 
+hereof, the system automatically generates the report for provided services (hereinafter – 
+certificate) and invoice in your account in the form of scanned copy with the facsimile. Originals 
+of closing documents are sent to the Supplier by registered mail within 30 business days by Russian 
+post upon additional request sent to the following email address: docs@roseltorg.tech. A copy of 
+the Report is signed by the Supplier within 3 (three) business days from the date of receipt and is 
+subject to mandatory return to ETP. The supplier sends the signed Act of ETP by mail, courier, 
+courier service or other delivery services to the address: 115114, Moscow, Kozhevnicheskaya str., 
+14, p. 5.if the Supplier does not return and/or sign the Act, and does not provide a reasoned refusal 
+to sign the Act within the period specified above, the Act is considered signed, and the services 
+are considered to have been rendered by ETP in full and in proper quality. 
+15.12.2. The Supplier in the payment document in the column «purpose of payment» 
+indicates: «ETP KIM Replenishment of personal account No. __________.VAT is not charged.» 
+
+--- Page 38 ---
+ 
+State Atomic Energy Corporation Rosatom 
+Corporate Online Store Rules of Operation  
+ 
+38 
+ 
+15.12.3. ETP (as well as the settlement organization in which the Account of ETP is opened) 
+is not responsible for errors or delays in payments made by other settlement organizations, and is 
+not responsible for the consequences related to the financial situation of other settlement 
+organizations. 
+15.12.4. The Supplier is responsible for the accuracy and completeness of the information 
+and authenticity of the documents provided by the COS OPS. 
+15.12.5. ETP (as well as the settlement organization with which the ETP Account is opened) 
+is not responsible for erroneous transfer (non-transfer) of funds associated with incorrect indication 
+by the Supplier of the details of the recipient of funds in payment documents. 
+ 

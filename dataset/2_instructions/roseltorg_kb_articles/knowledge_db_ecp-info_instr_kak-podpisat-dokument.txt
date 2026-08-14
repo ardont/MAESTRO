@@ -1,0 +1,8 @@
+SOURCE URL: https://www.roseltorg.ru/knowledge_db/ecp-info/instr/kak-podpisat-dokument
+TITLE: Как подписывать файлы Word, Excel, PDF электронной подписью
+TAGS: Электронная подпись
+============================================================
+
+* [Как подписать документ в Word и Excel ](/ecp/info/podpisat_word_excel)
+  * [Как подписать PDF-документ](/ecp/info/pdf_signature)
+  * [Как подписать любой документ в КриптоАРМ ](/ecp/info/criptoapm_signature)

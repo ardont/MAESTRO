@@ -1,0 +1,10 @@
+SOURCE URL: https://www.roseltorg.ru/knowledge_db/44fz/reply/esli-predpriyatie-stanovitsya-platelschikom-nds-i-v-svyazi-s-etim-khochet-uvelichit-summu-kontrakta
+TITLE: Если предприятие становится плательщиком НДС и в связи с этим хочет увеличить сумму контракта, можно ли её увеличить дополнительным соглашением (в контракте прописано, что цена твёрдая)?
+TAGS: 44-ФЗГосзакупкиЗаказчик
+============================================================
+
+Изменять существенные условия контракта возможно в случаях, установленных [ст. 95 Закона № 44-ФЗ](https://www.consultant.ru/document/cons_doc_LAW_144624/f4823c3311874efd0ecdfa668c9705968edbc47c/), однако порядок формирования цены контракта не является его существенным условием (при выделении НДС цена контракта не изменяется). Оплата налогов, сборов и других обязательных платежей является обязанностью участника закупки в рамках положений НК РФ. Позицию подтверждает [определение ВС РФ от 10.05.2023 № 310-ЭС23-3344 по делу № А48-873/2022](https://www.garant.ru/products/ipo/prime/doc/406766990/).
+
+Ответы на вопросы слушателей предоставил лектор на [вебинаре «День заказчика»](https://www.roseltorg.ru/knowledge_db/44fz/video/planirovanie-zakupok-i-organizaciya-raboty-kontraktnoy-sluzhby-v-2026-godu-rabota-v-eis).
+
+[](https://www.roseltorg.ru/education?from=replybz)
