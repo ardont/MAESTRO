@@ -74,18 +74,18 @@ def search_in_qdrant(query: str, top_k: int = 3, category_filter: str = None):
     return hits
 
 # === 4. Основной пайплайн RAG ===
-def rag_pipeline(user_message: str):
+def rag_pipeline(user_message: str, category_filter: str = None):
     """
     Полный RAG пайплайн:
     1. Нормализация запроса
-    2. Семантический поиск в Qdrant с метаданными
+    2. Семантический поиск в Qdrant с метаданными и фильтрацией по категории
     3. Проверка порога уверенности (Strict Fallback)
     4. Формирование ответа с цитатами и изображениями
     """
     normalized_query = normalise_query(user_message, TERMINS)
 
     # Шаг 1: Поиск в Qdrant
-    hits = search_in_qdrant(normalized_query, top_k=3)
+    hits = search_in_qdrant(normalized_query, top_k=3, category_filter=category_filter)
 
     if not hits or (hits and hits[0].score < 0.40):
         return {
