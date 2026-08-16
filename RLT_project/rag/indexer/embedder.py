@@ -8,7 +8,12 @@ warnings.filterwarnings("ignore", message="Some weights of.*were not initialized
 
 class RoSBERTaEmbedder:
     def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+        else:
+            self.device = torch.device("cpu")
         print(f"[EMBEDDER] Initializing '{model_name}' on device: {self.device}")
         
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -18,10 +23,10 @@ class RoSBERTaEmbedder:
 
     def get_embedding(self, text: str) -> np.ndarray:
         """
-        Получение нормализованного эмбеддинга для одного текста (768d)
+        Получение нормализованного эмбеддинга для одного текста (1024d)
         """
         if not text:
-            return np.zeros(768, dtype=np.float32)
+            return np.zeros(1024, dtype=np.float32)
             
         inputs = self.tokenizer(
             text,
@@ -44,7 +49,7 @@ class RoSBERTaEmbedder:
         Пакетная векторизация списка текстов с ускорением через батчинг
         """
         if not texts:
-            return np.empty((0, 768), dtype=np.float32)
+            return np.empty((0, 1024), dtype=np.float32)
             
         all_embeddings = []
         
