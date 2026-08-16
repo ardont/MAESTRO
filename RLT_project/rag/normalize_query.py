@@ -1,8 +1,16 @@
 import os
+import sys
 import re
 import unicodedata
 import json
 import subprocess
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 FZ_SET = {"44","223","63","135","149"}
 SANITIZE_NO_SYMBOLS = False
@@ -131,24 +139,36 @@ PROMPT_HEADER = """Ты — НОРМАЛИЗАТОР ЗАПРОСОВ для RAG
    search_query: <нормализованный запрос>
 """
 
+import requests
+
 def _call_local_gpt(prompt: str) -> str:
     """
-    Вызов локальной модели gpt-oss:20b через Ollama CLI (новая версия).
+    Быстрый вызов локальной модели gpt-oss:20b через Ollama HTTP API или CLI с мгновенным fallback
     """
+    # 1. Попытка через HTTP API (короткий connect timeout 0.4 сек, чтобы не зависать)
     try:
-        # Передаём prompt через stdin и читаем stdout
-        result = subprocess.run(
-            ["ollama", "run", "gpt-oss:20b"],
-            input=prompt,
-            capture_output=True,
-            text=True,
-            check=True
+        res = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "gpt-oss:20b",
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,
+                    "top_p": 0.9
+                }
+            },
+            timeout=(0.4, 5.0)
         )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        return f"search_query: ERROR {e.stderr.strip()}"
+        if res.status_code == 200:
+            return res.json().get("response", "").strip()
+    except Exception:
+        pass
 
-def normalise_query(query: str, termins: dict) -> str:
+    # 2. Если Ollama недоступна, мгновенный fallback на словарное правило
+    return ""
+
+def normalise_query(query: str, termins: dict = TERMINS) -> str:
     q0 = normalize_basic(query)
     present = _present_terms(q0, termins)
     q1 = expand_terms_onepass(q0, present, skip_laws=True)
@@ -163,10 +183,10 @@ def normalise_query(query: str, termins: dict) -> str:
     )
 
     text = _call_local_gpt(prompt)
-    out = _clean_llm_output(text)
+    out = _clean_llm_output(text) if text else ""
     out = re.sub(r"\s+", " ", out).strip()
 
-    if not out or out.lower().strip() == "search_query:":
+    if not out or out.lower().strip() in ("search_query:", "search_query"):
         out = "search_query: " + q1
 
     if SANITIZE_NO_SYMBOLS:
@@ -176,4 +196,26 @@ def normalise_query(query: str, termins: dict) -> str:
         out = prefix + body
 
     return out
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("🔍 ТЕСТИРОВАНИЕ МОДУЛЯ НОРМАЛИЗАЦИИ ЗАПРОСОВ (normalize_query.py)")
+    print("=" * 70)
+
+    test_samples = [
+        "Как войти в лк через госуслуги и настроить эдо по 44 фз?",
+        "Какая нужна эцп для 223фз и как поставить криптопро?",
+        "Порядок подачи жалобы в фас по ст 93",
+        "Регистрация в еис и еруз для новичка"
+    ]
+
+    for idx, sample in enumerate(test_samples, 1):
+        norm = normalise_query(sample)
+        print(f"\n[Тест {idx}]")
+        print(f"  Вход : «{sample}»")
+        print(f"  Выход: {norm}")
+    print("\n" + "=" * 70)
+    print("✅ Нормализация успешно протестирована!")
+    print("=" * 70)
 

@@ -6,21 +6,29 @@ from .config import (
     COLLECTION_NAME, EMBEDDING_DIM, QDRANT_HOST, QDRANT_PORT, QDRANT_STORAGE_DIR
 )
 
+_cached_qdrant_client = None
+
 def get_qdrant_client() -> QdrantClient:
     """
-    Возвращает клиент Qdrant с автоматическим fallback:
+    Возвращает клиент Qdrant с автоматическим fallback и кэшированием инстанса:
     1. Локальный сервер localhost:6333
     2. Локальное встроенное хранилище ./qdrant_storage
     """
+    global _cached_qdrant_client
+    if _cached_qdrant_client is not None:
+        return _cached_qdrant_client
+
     try:
         # Проверяем доступность сервера Qdrant
         client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=2.0)
         client.get_collections()
         print(f"[QDRANT] Connected to Qdrant server at {QDRANT_HOST}:{QDRANT_PORT}")
+        _cached_qdrant_client = client
         return client
     except Exception:
         print(f"[QDRANT] Server not found, using embedded local storage: {QDRANT_STORAGE_DIR}")
-        return QdrantClient(path=str(QDRANT_STORAGE_DIR))
+        _cached_qdrant_client = QdrantClient(path=str(QDRANT_STORAGE_DIR))
+        return _cached_qdrant_client
 
 def init_collection(client: QdrantClient, recreate: bool = True):
     """

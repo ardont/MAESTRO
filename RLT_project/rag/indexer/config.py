@@ -17,7 +17,7 @@ os.makedirs(QDRANT_STORAGE_DIR, exist_ok=True)
 
 # Настройки модели эмбеддингов
 EMBEDDING_MODEL_NAME = "ai-forever/ru-en-RoSBERTa"
-EMBEDDING_DIM = 768
+EMBEDDING_DIM = 1024
 BATCH_SIZE = 32  # Размер батча для векторизации
 
 # Настройки чанкинга
