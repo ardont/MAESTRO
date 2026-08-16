@@ -110,6 +110,7 @@ def run_indexing_pipeline(sample_limit: int = None):
 
     for q_idx, (q_text, expected_cat) in enumerate(test_queries, 1):
         print(f"\n[QUERY {q_idx}] «{q_text}» (Ожидается: {expected_cat})")
+        q_vec = embedder.get_embedding(q_text).tolist()
         if hasattr(client, "query_points"):
             hits = client.query_points(
                 collection_name=COLLECTION_NAME,

@@ -187,8 +187,9 @@ def rag_pipeline(user_message: str, category_filter: str = None):
     if marker in llm_answer:
         llm_answer = llm_answer.split(marker, 1)[1].strip()
 
-    # Шаг 4: Надежный Fallback-синтез, если LLM недоступна или долго отвечает
-    if not llm_answer or len(llm_answer.strip()) < 10:
+    # Шаг 4: Надежный Fallback-синтез, если LLM недоступна, вернула массив или долго отвечает
+    is_invalid_output = not llm_answer or len(llm_answer.strip()) < 10 or (llm_answer.strip().startswith('[') and llm_answer.strip().endswith(']'))
+    if is_invalid_output:
         main_source = citations[0] if citations else {"title": "Регламент Росэлторг", "url": "https://www.roseltorg.ru"}
         extracted_text = hits[0].payload.get("text", "").strip()
         
