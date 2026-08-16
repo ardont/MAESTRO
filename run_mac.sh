@@ -46,6 +46,7 @@ fi
 cd RLT_project
 
 echo "🗄️ Применение миграций базы данных (SQLite)..."
+python manage.py makemigrations chat accounts rag 2>/dev/null || true
 python manage.py migrate
 
 # 6. Проверка индексации базы знаний

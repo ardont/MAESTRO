@@ -1,6 +1,35 @@
 import re
 import uuid
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError:
+    class RecursiveCharacterTextSplitter:
+        def __init__(self, chunk_size=750, chunk_overlap=120, separators=None):
+            self.chunk_size = chunk_size
+            self.chunk_overlap = chunk_overlap
+            self.separators = separators or ["\n\n", "\n", ". ", "; ", ", ", " "]
+
+        def split_text(self, text: str) -> list:
+            if len(text) <= self.chunk_size:
+                return [text]
+            chunks = []
+            start = 0
+            while start < len(text):
+                end = min(start + self.chunk_size, len(text))
+                if end < len(text):
+                    # Ищем удобный разделитель
+                    for sep in self.separators:
+                        last_sep = text.rfind(sep, start, end)
+                        if last_sep != -1 and last_sep > start:
+                            end = last_sep + len(sep)
+                            break
+                chunk = text[start:end].strip()
+                if chunk:
+                    chunks.append(chunk)
+                start = max(start + 1, end - self.chunk_overlap)
+            return chunks
+
 from .config import CHUNK_SIZE, CHUNK_OVERLAP
 from .image_extractor import extract_images_from_markdown
 
