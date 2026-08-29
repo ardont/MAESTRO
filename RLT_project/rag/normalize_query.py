@@ -1,10 +1,27 @@
+"""
+normalize_query.py — Модуль нормализации пользовательских запросов перед семантическим поиском.
+
+Зачем нужна нормализация?
+  Пользователь пишет неаккуратно: "привет как войти в лк через есиа??? спасибо!!!"
+  Нормализация превращает это в:
+  "search_query: войти личный кабинет (ЛК) единая система аутентификации (ЕСИА)"
+
+Этапы:
+  1. normalize_basic()       — очистка Юникода, канонизация "44фз" → "44-ФЗ"
+  2. expand_terms_onepass()   — раскрытие аббревиатур по словарю TERMINS
+  3. LLM-нормализация     — GPT улучшает запрос (если доступна)
+  4. fallback                — если LLM недоступна — словарное раскрытие
+"""
+
 import os
 import sys
-import re
-import unicodedata
+import re               # Регулярные выражения для очистки текста
+import unicodedata      # Нормализация Юникода (NFKC)
 import json
 import subprocess
 
+# На Windows: принудительно ставим UTF-8 на stdout/stderr,
+# чтобы кириллица не ломалась при выводе в консоль
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -12,10 +29,20 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+# Номера федеральных законов для канонизации (44фз → 44-ФЗ)
 FZ_SET = {"44","223","63","135","149"}
+# Флаг: если True — удаляет спецсимволы из ответа (для безопасности UI)
 SANITIZE_NO_SYMBOLS = False
 
 
+# ─────────────────────────────────────────────
+# СЛОВАРЬ АББРЕВИАТУР РОСЭЛТОРГА
+# ─────────────────────────────────────────────
+# Ключ = аббревиатура, значение = полная расшифровка.
+# Используется для:
+#   1. Раскрытия аббревиатур в запросе: "лк" → "личный кабинет (ЛК)"
+#   2. Передачи LLM как контекстного словаря
+#   3. Отображения распознанных терминов в UI
 TERMINS = {
     "АС Оператора": "автоматизированная система Оператора",
     "ЕЭТП": "Единая электронная торговая площадка",
@@ -36,60 +63,94 @@ TERMINS = {
     "NTP": "Network Time Protocol",
     "DDoS": "распределённая атака отказа в обслуживании",
     "ГК РФ": "Гражданский кодекс Российской Федерации",
+    # Нормализация номеров законов (разные написания → единый формат)
     "44 фз": "44-ФЗ", "44фз": "44-ФЗ",
     "223 фз": "223-ФЗ", "223фз": "223-ФЗ",
     "63 фз": "63-ФЗ", "135 фз": "135-ФЗ", "149 фз": "149-ФЗ",
 }
 
 
+# ─────────────────────────────────────────────
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ОЧИСТКИ ТЕКСТА
+# ─────────────────────────────────────────────
+
 def _canonicalize_fz(text: str) -> str:
-    # 223 фз / 223-фз / 223фз -> 223-ФЗ
+    """Канонизация номеров законов: '223 фз' / '223-фз' / '223фз' → '223-ФЗ'"""
     def repl(m): return f"{m.group('num')}-ФЗ"
     pat = r"\b(?P<num>(?:%s))\s*[-–—]?\s*фз\b" % "|".join(FZ_SET)
     return re.sub(pat, repl, text, flags=re.IGNORECASE)
 
 def _squash_punct(text: str) -> str:
+    """Схлопывает повторяющуюся пунктуацию: '!!!' → '!', '???' → '?', '.....' → '...' """
     text = re.sub(r"[!]{2,}", "!", text)
     text = re.sub(r"[?]{2,}", "?", text)
     text = re.sub(r"[.]{3,}", "...", text)
     return text
 
 def normalize_basic(text: str) -> str:
+    """
+    Базовая очистка текста (без LLM):
+      1. Нормализация Юникода (NFKC — приводит к единому представлению)
+      2. Замена «красивых» символов на обычные (– → -, «» → "", ё → е)
+      3. Схлопывание пунктуации, пробелов
+      4. Канонизация номеров законов: 44фз → 44-ФЗ
+    """
     text = unicodedata.normalize("NFKC", text)
     text = text.replace("…", "...")  # многоточие -> ...
+    # Заменяем разные виды пробелов на обычный
     text = text.replace("\u00A0", " ").replace("\u2009", " ").replace("\u2007", " ").replace("\u202F", " ")
+    # Разные типы тире/минуса → обычный дефис
     text = text.replace("–", "-").replace("—", "-").replace("−", "-")
+    # «Красивые» кавычки → обычные ""
     text = text.replace("«", "\"").replace("»", "\"").replace("“", "\"").replace("”", "\"").replace("„", "\"")
+    # ё → е (для унификации поиска)
     text = text.replace("ё", "е").replace("Ё", "Е")
     text = _squash_punct(text)
-    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\s+", " ", text).strip()  # Множественные пробелы → один
     text = _canonicalize_fz(text)
     return text
 
 def _present_terms(text: str, termins: dict) -> dict:
+    """
+    Находит все аббревиатуры из словаря, присутствующие в тексте.
+    Сортирует по длине ключа (от длинных к коротким),
+    чтобы "Система ЭДО" матчилась раньше "ЭДО".
+    """
     present = {}
     for k in sorted(termins.keys(), key=len, reverse=True):
+        # (?<!\w) и (?!\w) — границы слова (чтобы не ловить части слов)
         if re.search(rf"(?i)(?<!\w){re.escape(k)}(?!\w)", text):
             present[k] = termins[k]
     return present
 
 
 def expand_terms_onepass(text: str, present: dict, skip_laws: bool = True) -> str:
-    """Один проход без вложенных замен: <полная форма> (<АБР>)."""
+    """
+    Заменяет аббревиатуры на "полная_форма (АБР)" за один проход.
+
+    Пример: "как войти в ЛК" → "как войти в личный кабинет (ЛК)"
+
+    skip_laws=True — не раскрывать "44фз" (уже канонизировано в "44-ФЗ")
+    """
     if not present:
         return text
     items = []
     for k, v in present.items():
+        # Пропускаем номера законов, если skip_laws=True
         if skip_laws and re.fullmatch(r"\d{2,3}[\s-]*фз", k, flags=re.IGNORECASE):
             continue
         items.append((k, v))
     if not items:
         return text
+
+    # Сортируем по длине (сначала длинные — чтобы "Система ЭДО" матчилась раньше "ЭДО")
     items.sort(key=lambda kv: len(kv[0]), reverse=True)
     alt = "|".join(re.escape(k) for k, _ in items)
     pattern = re.compile(rf"(?i)(?<!\w)(?:{alt})(?!\w)")
     lower_map = {k.lower(): v for k, v in items}
 
+    # Один проход по всем найденным аббревиатурам:
+    # Каждую заменяем на "полная форма (аббревиатура)"
     out, last = [], 0
     for m in pattern.finditer(text):
         out.append(text[last:m.start()])
@@ -101,6 +162,12 @@ def expand_terms_onepass(text: str, present: dict, skip_laws: bool = True) -> st
     return "".join(out)
 
 def _clean_llm_output(raw: str) -> str:
+    """
+    Очищает вывод LLM:
+      - Убирает маркдаун-обёртки (```...```)
+      - Извлекает строку после "search_query:"
+      - Возвращает очищенный результат в формате "search_query: ..."
+    """
     s = str(raw).strip()
     s = re.sub(r"^```(?:\w+)?\n?|\n?```$", "", s)
     m = re.search(r"(?i)^\s*search_query\s*:\s*(.+)$", s, flags=re.MULTILINE)
@@ -110,13 +177,18 @@ def _clean_llm_output(raw: str) -> str:
     return "search_query: " + first if not first.lower().startswith("search_query:") else first
 
 def _sanitize_ui(text: str) -> str:
-    """Строгий санитайз для UI: только буквы RU/EN, цифры и пробелы."""
+    """Строгий санитайз для UI: оставляем только буквы RU/EN, цифры, пробелы и пунктуацию."""
     text = re.sub(r"[-/:_\"'()]", " ", text)
     text = re.sub(r"[^0-9A-Za-zА-Яа-яЁё .,]+", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
+# ─────────────────────────────────────────────
+# ПРОМПТ ДЛЯ LLM-НОРМАЛИЗАЦИИ
+# ─────────────────────────────────────────────
+# Этот промпт отправляется LLM вместе с запросом пользователя.
+# LLM должна вернуть одну строку: "search_query: <нормализованный запрос>"
 PROMPT_HEADER = """Ты — НОРМАЛИЗАТОР ЗАПРОСОВ для RAG системы сервиса закупок.
 
 КОНТЕКСТ
@@ -168,11 +240,27 @@ def _call_local_gpt(prompt: str) -> str:
     # 2. Если Ollama недоступна, мгновенный fallback на словарное правило
     return ""
 
+
 def normalise_query(query: str, termins: dict = TERMINS) -> str:
+    """
+    ГЛАВНАЯ ФУНКЦИЯ: полный пайплайн нормализации запроса.
+
+    Этапы:
+      1. Базовая очистка (Юникод, пунктуация, канонизация ФЗ)
+      2. Находим аббревиатуры в тексте и раскрываем их
+      3. Отправляем в LLM для умной нормализации
+      4. Если LLM недоступна — используем словарное раскрытие
+
+    Возвращает: строку вида "search_query: <нормализованный запрос>"
+    """
+    # Шаг 1: Базовая очистка
     q0 = normalize_basic(query)
+    # Шаг 2: Находим аббревиатуры из словаря в тексте
     present = _present_terms(q0, termins)
+    # Шаг 3: Раскрываем их: "лк" → "личный кабинет (ЛК)"
     q1 = expand_terms_onepass(q0, present, skip_laws=True)
 
+    # Шаг 4: Составляем промпт для LLM: правила + словарь + запрос пользователя
     prompt = (
         PROMPT_HEADER
         + "\nСЛОВАРЬ_ДОМЕНА (используй только для расшифровки аббревиатур):\n<<<GLOSSARY\n"
@@ -182,13 +270,16 @@ def normalise_query(query: str, termins: dict = TERMINS) -> str:
           "Вход:\n<<<USER\n" + q1 + "\nUSER>>>\nВыход:"
     )
 
+    # Шаг 5: Вызываем LLM (если доступна)
     text = _call_local_gpt(prompt)
     out = _clean_llm_output(text) if text else ""
     out = re.sub(r"\s+", " ", out).strip()
 
+    # Шаг 6: Fallback — если LLM не ответила — используем словарный результат
     if not out or out.lower().strip() in ("search_query:", "search_query"):
         out = "search_query: " + q1
 
+    # Опциональная строгая очистка для UI (если включено)
     if SANITIZE_NO_SYMBOLS:
         prefix = "search_query: "
         body = out[len(prefix):] if out.lower().startswith(prefix) else out

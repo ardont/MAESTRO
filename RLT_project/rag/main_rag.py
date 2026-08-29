@@ -1,63 +1,91 @@
+"""
+main_rag.py — Главный RAG-пайплайн (ЯДРО СИСТЕМЫ).
+
+RAG = Retrieval-Augmented Generation (генерация с подкреплением из базы знаний).
+
+Как работает:
+  1. Пользователь задаёт вопрос → "Как настроить ЭЦП?"
+  2. Нормализация запроса  → "настройка электронная подпись (ЭЦП)"
+  3. Векторизация          → [0.12, -0.34, 0.56, ...] (1024 числа)
+  4. Поиск в Qdrant        → 3 ближайших чанка из базы знаний
+  5. Составляем промпт    → контекст + вопрос → LLM
+  6. LLM генерирует ответ → структурированный ответ + ссылки
+"""
+
 import json
 import subprocess
-import requests
+import requests                              # HTTP-запросы к Ollama API
 from qdrant_client import QdrantClient
-from .normalize_query import normalise_query, TERMINS
-from .embed_query import get_embedding
-from .indexer.config import COLLECTION_NAME
-from .indexer.qdrant_indexer import get_qdrant_client
+from .normalize_query import normalise_query, TERMINS  # Нормализация запросов
+from .embed_query import get_embedding                 # Векторизация текста
+from .indexer.config import COLLECTION_NAME            # Имя коллекции в Qdrant
+from .indexer.qdrant_indexer import get_qdrant_client   # Подключение к Qdrant
 
-# === 1. Подключение к Qdrant ===
+# === 1. Подключение к Qdrant (создаём клиент при импорте модуля) ===
 client = get_qdrant_client()
 
-# === 2. Вызов локальной модели через Ollama ===
+# === 2. Вызов локальной LLM-модели через Ollama ===
+
 def _get_active_ollama_model() -> str:
     """
-    Автоматически определяет доступную модель в Ollama
+    Автоматически определяет доступную LLM-модель в Ollama.
+
+    Ollama — тоол для запуска LLM локально на компьютере.
+    Запрашиваем список установленных моделей и выбираем лучшую.
+
+    Приоритет: gpt-oss:20b > qwen2.5:7b > llama3.2 > mistral > gemma
+    Если Ollama недоступна — возвращаем "gpt-oss:20b" по умолчанию.
     """
     try:
+        # Опрашиваем API Ollama на localhost:11434
         r = requests.get("http://localhost:11434/api/tags", timeout=1.0)
         if r.status_code == 200:
             models_list = r.json().get("models", [])
             installed = [m.get("name") for m in models_list if m.get("name")]
             if installed:
-                # Если установлена gpt-oss:20b - берем её, иначе любую доступную
+                # Проверяем приоритетные модели по порядку
                 for preferred in ["gpt-oss:20b", "gpt-oss", "qwen2.5:7b", "llama3.2", "mistral", "gemma"]:
                     for m in installed:
                         if preferred in m:
                             return m
+                # Если ни одна приоритетная не найдена — берём любую доступную
                 return installed[0]
     except Exception:
         pass
-    return "gpt-oss:20b"
+    return "gpt-oss:20b"  # Дефолтная модель
 
 def _call_local_gpt(prompt: str) -> str:
     """
-    Вызов LLM через Ollama HTTP API с достаточным таймаутом для медленных ПК
+    Вызов локальной LLM через Ollama. Два способа (с fallback):
+      1. HTTP API (http://localhost:11434/api/generate) — основной
+      2. CLI (ollama run model_name) — запасной
+
+    Таймаут 120сек — достаточно для генерации на CPU.
+    Возвращает пустую строку, если LLM недоступна.
     """
     model_name = _get_active_ollama_model()
-    
-    # 1. Попытка через HTTP API
+
+    # Способ 1: HTTP API Ollama
     try:
         res = requests.post(
             "http://localhost:11434/api/generate",
             json={
                 "model": model_name,
                 "prompt": prompt,
-                "stream": False,
+                "stream": False,     # Ждём полный ответ (не стриминг)
                 "options": {
-                    "temperature": 0.2,
+                    "temperature": 0.2,  # Низкая температура = более точный ответ
                     "top_p": 0.9
                 }
             },
-            timeout=120  # Достаточный таймаут для генерации на CPU
+            timeout=120  # 2 минуты на CPU-генерацию
         )
         if res.status_code == 200:
             return res.json().get("response", "").strip()
     except Exception:
         pass
 
-    # 2. Попытка через CLI
+    # Способ 2: CLI (subprocess) — запускаем как команду в консоли
     try:
         result = subprocess.run(
             ["ollama", "run", model_name],
@@ -69,13 +97,27 @@ def _call_local_gpt(prompt: str) -> str:
         )
         return result.stdout.strip()
     except Exception as e:
-        return ""
+        return ""  # LLM недоступна — система переключится на fallback-синтез
 
 
 # === 3. Поиск релевантных документов в Qdrant ===
+
 def search_in_qdrant(query: str, top_k: int = 3, category_filter: str = None):
+    """
+    Семантический поиск: находит top_k ближайших чанков по смыслу.
+
+    Аргументы:
+      query           — нормализованный текст запроса
+      top_k           — сколько результатов вернуть (3 по умолчанию)
+      category_filter  — фильтр по категории ("44fz", "ecp_mchd" и т.д.)
+
+    Возвращает:
+      Список найденных точек (score + payload с метаданными)
+    """
+    # Превращаем текст запроса в вектор
     vector = get_embedding(query).tolist()
-    
+
+    # Формируем фильтр по категории (если указан)
     query_filter = None
     if category_filter:
         from qdrant_client.http import models
@@ -87,9 +129,11 @@ def search_in_qdrant(query: str, top_k: int = 3, category_filter: str = None):
                 )
             ]
         )
-        
+
     client = get_qdrant_client()
     try:
+        # Поддержка разных версий Qdrant-клиента:
+        # новый API (query_points) или старый (search)
         if hasattr(client, "query_points"):
             res = client.query_points(
                 collection_name=COLLECTION_NAME,
