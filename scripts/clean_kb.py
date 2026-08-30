@@ -14,6 +14,15 @@ def clean_html(html_content):
     if not html_content:
         return ""
     soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Сохраняем картинки, заменяя тег <img> на Markdown-разметку
+    for img in soup.find_all('img'):
+        src = img.get('src', '')
+        if src.startswith('/'):
+            src = "https://zakupki.mos.ru" + src
+        alt = img.get('alt', 'Изображение')
+        img.replace_with(f"\n![{alt}]({src})\n")
+        
     return soup.get_text(separator='\n', strip=True)
 
 def determine_doc_type(title, text):
