@@ -15,21 +15,24 @@ _URL_IMAGES_CACHE = {}
 
 def extract_images_from_markdown(text: str) -> list:
     """
-    Извлекает ссылки на изображения из markdown текста (![alt](url) и <img src="...">)
+    Извлекает ссылки на изображения из markdown текста (![alt](url) и <img src="...">).
+    Поддерживает как внешние ссылки (http/https), так и локальные пути (images/..., media/...).
     """
     images = []
-    # Markdown format ![alt](url)
-    md_matches = re.findall(r'!\[.*?\]\((https?://[^\s\)]+|\/[^\s\)]+)\)', text)
+    # Markdown format ![alt](url) — поддерживает как http/https, так и локальные images/... и /cms/...
+    md_matches = re.findall(r'!\[.*?\]\(([^\s\)\"\']+)\)', text)
     for img_url in md_matches:
-        if img_url not in images:
+        img_url = img_url.strip()
+        if img_url and img_url not in images and not img_url.startswith("data:"):
             images.append(img_url)
-            
+
     # HTML format <img ... src="url" ...>
-    html_matches = re.findall(r'<img[^>]+src=["\'](https?://[^"\']+|\/[^"\']+)["\']', text, re.IGNORECASE)
+    html_matches = re.findall(r'<img[^>]+src=["\']([^"\'\s>]+)["\']', text, re.IGNORECASE)
     for img_url in html_matches:
-        if img_url not in images:
+        img_url = img_url.strip()
+        if img_url and img_url not in images and not img_url.startswith("data:"):
             images.append(img_url)
-            
+
     return images
 
 def fetch_page_images(url: str, timeout: int = 5) -> list:

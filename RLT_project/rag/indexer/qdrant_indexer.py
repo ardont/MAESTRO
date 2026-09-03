@@ -93,7 +93,12 @@ def init_collection(client: QdrantClient, recreate: bool = True):
                 field_name="doc_type",
                 field_schema=models.PayloadSchemaType.KEYWORD
             )
-            print("[QDRANT] Payload indexes created (category, doc_type).")
+            client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name="doc_id",
+                field_schema=models.PayloadSchemaType.KEYWORD
+            )
+            print("[QDRANT] Payload indexes created (category, doc_type, doc_id).")
         except Exception as e:
             print(f"[QDRANT] Note on payload index creation: {e}")
 
@@ -106,7 +111,7 @@ def upsert_chunks_batch(client: QdrantClient, chunks: list, embeddings: list, ba
     Каждый «поинт» (Point) в Qdrant содержит:
       - id       — уникальный идентификатор (chunk_id из чанкера)
       - vector   — эмбеддинг [1024 float]
-      - payload  — метаданные (title, url, text, category, images...)
+      - payload  — метаданные (title, url, text, category, step_number, images...)
 
     Аргументы:
       chunks     — список словарей чанков (из chunker.py)
@@ -130,14 +135,16 @@ def upsert_chunks_batch(client: QdrantClient, chunks: list, embeddings: list, ba
                     vector=vec.tolist() if hasattr(vec, "tolist") else list(vec),
                     # Метаданные чанка — эти поля возвращаются при поиске
                     payload={
-                        "doc_id": ch["doc_id"],             # Имя исходного файла
+                        "chunk_id": ch["chunk_id"],
+                        "doc_id": ch["doc_id"],             # Имя исходного файла / ID статьи
                         "title": ch["title"],               # Заголовок документа
                         "url": ch["url"],                   # Ссылка-источник
                         "category": ch["category"],         # Категория (для фильтрации)
-                        "doc_type": ch["doc_type"],         # Тип документа
-                        "section_header": ch["section_header"],  # Заголовок раздела
-                        "images": ch.get("images", []),     # Ссылки на скриншоты
-                        "text": ch["text"]                  # Текст чанка
+                        "doc_type": ch["doc_type"],         # Тип документа (instruction / legislation / faq)
+                        "section_header": ch["section_header"],  # Заголовок раздела (breadcrumbs)
+                        "step_number": ch.get("step_number"),   # Номер шага ("Шаг 1" и т.д.)
+                        "images": ch.get("images", []),     # Локальные пути к скриншотам
+                        "text": ch["text"]                  # Полный текст чанка с контекстом
                     }
                 )
             )
