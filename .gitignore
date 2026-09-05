@@ -43,7 +43,6 @@ test_cfg.json
 
 # --- Секреты/ключи
 .env
-.env.*
 *.pem
 *.key
 secrets.json
