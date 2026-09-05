@@ -36,6 +36,11 @@ class RoSBERTaEmbedder:
     """
 
     def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
+        import os
+        local_model_path = "/models/ru-en-RoSBERTa"
+        if os.path.exists(local_model_path):
+            print(f"[EMBEDDER] Найдена локальная модель: {local_model_path}")
+            model_name = local_model_path
         # Определяем, на каком устройстве считать:
         # CUDA (GPU NVIDIA) > MPS (GPU Apple M1/M2/M3) > CPU
         if torch.cuda.is_available():
