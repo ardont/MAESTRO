@@ -16,10 +16,11 @@ services:
       context: .
       dockerfile: Dockerfile.mac
     container_name: rlt_django
-    command: bash -c "cd RLT_project && python3 manage.py runserver 0.0.0.0:8000"
+    command: bash -c "cd RLT_project && python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
       - ~/.cache/huggingface:/root/.cache/huggingface
+      - ~/models:/models
     ports:
       - "8000:8000"
     depends_on:

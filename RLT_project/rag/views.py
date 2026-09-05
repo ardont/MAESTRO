@@ -100,6 +100,8 @@ def api_ask(request):
         }, status=200)
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
 
 

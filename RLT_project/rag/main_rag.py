@@ -37,8 +37,9 @@ def _get_active_ollama_model() -> str:
     Если Ollama недоступна — возвращаем "gpt-oss:20b" по умолчанию.
     """
     try:
-        # Опрашиваем API Ollama на localhost:11434
-        r = requests.get("http://localhost:11434/api/tags", timeout=1.0)
+        import os
+        ollama_url = f"{os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')}/api/tags"
+        r = requests.get(ollama_url, timeout=1.0)
         if r.status_code == 200:
             models_list = r.json().get("models", [])
             installed = [m.get("name") for m in models_list if m.get("name")]
@@ -67,8 +68,10 @@ def _call_local_gpt(prompt: str) -> str:
 
     # Способ 1: HTTP API Ollama
     try:
+        import os
+        ollama_generate_url = f"{os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')}/api/generate"
         res = requests.post(
-            "http://localhost:11434/api/generate",
+            ollama_generate_url,
             json={
                 "model": model_name,
                 "prompt": prompt,
