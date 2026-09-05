@@ -5,7 +5,7 @@ def create_code_zip():
     zip_path = "code_only.zip"
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         # Добавляем основные файлы
-        for f in ["Dockerfile", "Dockerfile.mac", "docker-compose.yml", "docker-compose.mac.yml", "requirements.txt", "requirements_mac.txt", "run_mac.sh"]:
+        for f in ["Dockerfile", "docker-compose.yml", "docker-compose.mac.yml", "requirements.txt", "requirements_mac.txt", "run_mac.sh"]:
             if os.path.exists(f):
                 zipf.write(f)
         

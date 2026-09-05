@@ -13,15 +13,23 @@ if llm_request_topic is None:
 
 logger = getLogger(__name__)
 
-@broker.subscribe(topic=llm_request_topic, concurrency=5)
-async def llm_request_handler(
-    msg: KafkaMessage,
-):
+@broker.subscriber(llm_request_topic, max_workers=1)
+async def llm_request_handler(msg: KafkaMessage):
     try:
+        logger.info("SUBSCRIBER START")
+
         body = msg.body.decode()
+        logger.info(f"BODY: {body}")
+
         msg_event = NewMessageEvent.from_json(body)
+        logger.info(f"EVENT: {msg_event}")
+
+        logger.info("CALL HANDLER")
+
         await new_message_handler(msg_event)
-    except Exception as e:
-        logger.error(e)
 
+        print("HANDLER FINISHED")
 
+    except Exception:
+        logger.exception("Error processing Kafka message")
+        raise
