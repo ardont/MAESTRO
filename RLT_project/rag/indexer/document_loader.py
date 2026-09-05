@@ -151,14 +151,30 @@ def load_all_documents(include_legislation: bool = True) -> List[Dict[str, Any]]
                         text_body = f.read().strip()
 
                     if len(text_body) > 200:
-                        first_line = text_body.splitlines()[0].strip("# ").strip()
-                        title = first_line if len(first_line) > 5 else inst_file.stem.replace("_", " ")
+                        lines = text_body.splitlines()
+                        real_url = ""
+                        real_title = inst_file.stem.replace("_", " ")
+                        
+                        # Парсим заголовки файла
+                        for line in lines[:5]:
+                            if line.startswith("SOURCE URL:"):
+                                real_url = line.replace("SOURCE URL:", "").strip()
+                            elif line.startswith("TITLE:"):
+                                real_title = line.replace("TITLE:", "").strip()
+                                
                         cat = "44fz" if ("44" in fn) else "223fz"
 
+                        # Убираем эти системные строки из самого текста, чтобы не мусорить в индекс
+                        clean_lines = []
+                        for line in lines:
+                            if not (line.startswith("SOURCE URL:") or line.startswith("TITLE:") or line.startswith("TAGS:") or line.startswith("===")):
+                                clean_lines.append(line)
+                        clean_text_body = "\n".join(clean_lines).strip()
+
                         documents.append({
-                            "text": text_body,
-                            "title": title,
-                            "url": f"https://zakupki.mos.ru/knowledgebase/article/{abs(hash(inst_file.name))%1000000}",
+                            "text": clean_text_body,
+                            "title": real_title,
+                            "url": real_url,
                             "category": cat,
                             "doc_type": "instruction",
                             "file_name": inst_file.name,

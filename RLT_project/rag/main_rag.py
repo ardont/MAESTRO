@@ -37,14 +37,15 @@ def _get_active_ollama_model() -> str:
     Если Ollama недоступна — возвращаем "gpt-oss:20b" по умолчанию.
     """
     try:
-        # Опрашиваем API Ollama на localhost:11434
-        r = requests.get("http://localhost:11434/api/tags", timeout=1.0)
+        import os
+        ollama_url = f"{os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')}/api/tags"
+        r = requests.get(ollama_url, timeout=1.0)
         if r.status_code == 200:
             models_list = r.json().get("models", [])
             installed = [m.get("name") for m in models_list if m.get("name")]
             if installed:
-                # Проверяем приоритетные модели по порядку
-                for preferred in ["gpt-oss:20b", "gpt-oss", "qwen2.5:7b", "llama3.2", "mistral", "gemma"]:
+                # Приоритет: легкие быстрые модели (3B-8B) в начале, тяжелые (20b) в конце
+                for preferred in ["llama3.2", "qwen2.5:3b", "qwen2.5:7b", "mistral", "gemma", "gpt-oss:20b", "gpt-oss"]:
                     for m in installed:
                         if preferred in m:
                             return m
@@ -67,8 +68,10 @@ def _call_local_gpt(prompt: str) -> str:
 
     # Способ 1: HTTP API Ollama
     try:
+        import os
+        ollama_generate_url = f"{os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')}/api/generate"
         res = requests.post(
-            "http://localhost:11434/api/generate",
+            ollama_generate_url,
             json={
                 "model": model_name,
                 "prompt": prompt,
@@ -106,7 +109,7 @@ def search_in_qdrant(query: str, top_k: int = 3, category_filter: str = None):
     """
     Семантический поиск (HYBRID SEARCH: Dense + BM25):
     """
-    from RLT_project.rag.indexer.embedder import get_embedder, get_sparse_embedder
+    from rag.indexer.embedder import get_embedder, get_sparse_embedder
     
     vector = get_embedder().get_embedding(query).tolist()
     sparse_vector = get_sparse_embedder().get_sparse_embedding(query)
@@ -154,16 +157,22 @@ def rag_pipeline(user_message: str, category_filter: str = None):
     3. Проверка порога уверенности
     4. Формирование ответа через LLM или умный синтез из базы знаний
     """
+    import time
+    
+    print(f"\n--- [RAG PIPELINE] СТАРТ ЗАПРОСА: '{user_message}' ---")
+    t0 = time.time()
     normalized_query = normalise_query(user_message, TERMINS)
 
     # Шаг 1: Поиск в Qdrant
+    t1 = time.time()
     hits = search_in_qdrant(normalized_query, top_k=3, category_filter=category_filter)
-
-    # Если с фильтром ничего не найдено - пробуем глобальный поиск без фильтра
     if not hits and category_filter:
         hits = search_in_qdrant(normalized_query, top_k=3, category_filter=None)
+    t2 = time.time()
+    print(f"[RAG PIPELINE] Поиск в Qdrant занял: {t2 - t1:.2f} сек. Найдено документов: {len(hits)}")
 
     if not hits:
+        print("[RAG PIPELINE] Документы не найдены, возврат заглушки.")
         return {
             "answer": "К сожалению, в официальной базе знаний пока нет регламентированного ответа на данный вопрос. Пожалуйста, обратитесь к дежурному специалисту службы поддержки.",
             "citations": [],
@@ -215,7 +224,12 @@ def rag_pipeline(user_message: str, category_filter: str = None):
 4. В конце укажи главный первоисточник в формате: "Источник: {citations[0]['title'] if citations else 'База знаний'} ({citations[0]['url'] if citations else ''})"
 """
 
+    print(f"[RAG PIPELINE] Отправка запроса в локальную LLM (Ollama)... Ждем генерации...")
+    t3 = time.time()
     llm_answer = _call_local_gpt(prompt)
+    t4 = time.time()
+    print(f"[RAG PIPELINE] Генерация LLM заняла: {t4 - t3:.2f} сек.")
+    print(f"--- [RAG PIPELINE] КОНЕЦ ЗАПРОСА ---")
     
     # Очищаем системные маркеры thinking, если модель их выводит
     marker = "...done thinking."
