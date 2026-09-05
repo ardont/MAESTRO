@@ -133,8 +133,8 @@ class RoSBERTaEmbedder:
 # Модель занимает ~1.3 ГБ памяти, поэтому создаём её один раз
 # и переиспользуем во всех модулях через get_embedder().
 
-_global_embedder = None  # Глобальная переменная для хранения единственного экземпляра
-
+_global_embedder = None  # Глобальная переменная для хранения единственного экземпляра (Dense)
+_global_sparse_embedder = None # Глобальная переменная для Sparse (BM25)
 
 def get_embedder() -> RoSBERTaEmbedder:
     """
@@ -145,3 +145,46 @@ def get_embedder() -> RoSBERTaEmbedder:
     if _global_embedder is None:
         _global_embedder = RoSBERTaEmbedder()
     return _global_embedder
+
+class SparseBM25Embedder:
+    """
+    Обёртка над разряженными векторами (BM25/SPLADE) через FastEmbed.
+    Используется для точного поиска по ключевым словам.
+    """
+    def __init__(self, model_name: str = "Qdrant/bm25"):
+        # lazy import чтобы не грузить библиотеку при старте, если не нужна
+        from fastembed import SparseTextEmbedding 
+        print(f"[SPARSE EMBEDDER] Initializing '{model_name}'")
+        self.model = SparseTextEmbedding(model_name=model_name)
+        
+    def get_sparse_embedding(self, text: str):
+        if not text:
+            from qdrant_client.http import models
+            return models.SparseVector(indices=[], values=[])
+            
+        # FastEmbed возвращает генератор, берем первый элемент
+        embedding = list(self.model.embed([text]))[0]
+        
+        from qdrant_client.http import models
+        return models.SparseVector(
+            indices=embedding.indices.tolist(),
+            values=embedding.values.tolist()
+        )
+
+    def get_sparse_embeddings_batch(self, texts: list):
+        if not texts:
+            return []
+        embeddings = list(self.model.embed(texts))
+        from qdrant_client.http import models
+        return [
+            models.SparseVector(
+                indices=emb.indices.tolist(),
+                values=emb.values.tolist()
+            ) for emb in embeddings
+        ]
+
+def get_sparse_embedder() -> SparseBM25Embedder:
+    global _global_sparse_embedder
+    if _global_sparse_embedder is None:
+        _global_sparse_embedder = SparseBM25Embedder()
+    return _global_sparse_embedder

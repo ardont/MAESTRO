@@ -89,8 +89,8 @@ COLLECTION_NAME = "data_files"
 
 # Адрес локального Qdrant-сервера (запускается отдельно через Docker или бинарник).
 # Если сервер недоступен — система автоматически использует QDRANT_STORAGE_DIR.
-QDRANT_HOST = "localhost"
-QDRANT_PORT = 6333
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.environ.get("QDRANT_PORT", 6333))
 
 # ─────────────────────────────────────────────
 # КЛЮЧЕВЫЕ СЛОВА ДЛЯ КАТЕГОРИЗАЦИИ ДОКУМЕНТОВ

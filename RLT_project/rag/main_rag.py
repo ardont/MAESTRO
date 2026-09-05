@@ -104,52 +104,43 @@ def _call_local_gpt(prompt: str) -> str:
 
 def search_in_qdrant(query: str, top_k: int = 3, category_filter: str = None):
     """
-    Семантический поиск: находит top_k ближайших чанков по смыслу.
-
-    Аргументы:
-      query           — нормализованный текст запроса
-      top_k           — сколько результатов вернуть (3 по умолчанию)
-      category_filter  — фильтр по категории ("44fz", "ecp_mchd" и т.д.)
-
-    Возвращает:
-      Список найденных точек (score + payload с метаданными)
+    Семантический поиск (HYBRID SEARCH: Dense + BM25):
     """
-    # Превращаем текст запроса в вектор
-    vector = get_embedding(query).tolist()
+    from RLT_project.rag.indexer.embedder import get_embedder, get_sparse_embedder
+    
+    vector = get_embedder().get_embedding(query).tolist()
+    sparse_vector = get_sparse_embedder().get_sparse_embedding(query)
 
-    # Формируем фильтр по категории (если указан)
     query_filter = None
+    from qdrant_client.http import models
     if category_filter:
-        from qdrant_client.http import models
         query_filter = models.Filter(
-            must=[
-                models.FieldCondition(
-                    key="category",
-                    match=models.MatchValue(value=category_filter)
-                )
-            ]
+            must=[models.FieldCondition(key="category", match=models.MatchValue(value=category_filter))]
         )
 
     client = get_qdrant_client()
     try:
-        # Поддержка разных версий Qdrant-клиента:
-        # новый API (query_points) или старый (search)
-        if hasattr(client, "query_points"):
-            res = client.query_points(
-                collection_name=COLLECTION_NAME,
-                query=vector,
-                query_filter=query_filter,
-                limit=top_k,
-            )
-            return res.points
-        elif hasattr(client, "search"):
-            return client.search(
-                collection_name=COLLECTION_NAME,
-                query_vector=vector,
-                query_filter=query_filter,
-                limit=top_k,
-            )
-        return []
+        # Гибридный поиск: Qdrant использует Reciprocal Rank Fusion (RRF)
+        res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=vector,
+                    using="",
+                    limit=top_k * 2,
+                    filter=query_filter
+                ),
+                models.Prefetch(
+                    query=sparse_vector,
+                    using="bm25",
+                    limit=top_k * 2,
+                    filter=query_filter
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            limit=top_k,
+        )
+        return res.points
     except Exception as e:
         print(f"[QDRANT SEARCH ERROR] {e}")
         return []

@@ -108,25 +108,38 @@ def run_indexing_pipeline(sample_limit: int = None):
         return
 
     # 3. Батчевая векторизация
-    print(f"\n[ШАГ 3/5] Батчевая векторизация через ru-en-RoSBERTa (размер батча: {BATCH_SIZE})...")
+    print(f"\n[ШАГ 3/5] Батчевая векторизация (размер батча: {BATCH_SIZE})...")
     embedder = get_embedder()
+    
+    # Лениво загружаем BM25, чтобы он инициализировался только когда нужен
+    from RLT_project.rag.indexer.embedder import get_sparse_embedder
+    sparse_embedder = get_sparse_embedder()
+    
     chunk_texts = [ch["text"] for ch in all_chunks]
 
     embeddings = []
-    for i in tqdm(range(0, len(chunk_texts), BATCH_SIZE), desc="Расчет эмбеддингов"):
+    sparse_embeddings = []
+    
+    for i in tqdm(range(0, len(chunk_texts), BATCH_SIZE), desc="Расчет эмбеддингов (Dense + Sparse)"):
         batch = chunk_texts[i:i + BATCH_SIZE]
+        
+        # Dense (RoSBERTa)
         batch_vecs = embedder.get_embeddings_batch(batch, batch_size=BATCH_SIZE)
         embeddings.append(batch_vecs)
+        
+        # Sparse (BM25)
+        batch_sparse = sparse_embedder.get_sparse_embeddings_batch(batch)
+        sparse_embeddings.extend(batch_sparse)
 
     all_embeddings = np.vstack(embeddings)
-    print(f"[OK] Рассчитано эмбеддингов: {len(all_embeddings)} (размерность вектора: {all_embeddings.shape[1]})")
+    print(f"[OK] Рассчитано эмбеддингов: {len(all_embeddings)} (Dense) и {len(sparse_embeddings)} (Sparse BM25)")
 
     # 4. Инициализация Qdrant и загрузка
     print(f"\n[ШАГ 4/5] Подключение к Qdrant и сохранение коллекции '{COLLECTION_NAME}'...")
     client = get_qdrant_client()
     init_collection(client, recreate=True)
 
-    upsert_chunks_batch(client, all_chunks, all_embeddings, batch_size=100)
+    upsert_chunks_batch(client, all_chunks, all_embeddings, sparse_embeddings, batch_size=100)
     print(f"[OK] Успешно сохранено {len(all_chunks)} точек в векторной коллекции Qdrant!")
 
     elapsed = time.time() - start_time

@@ -76,8 +76,13 @@ def init_collection(client: QdrantClient, recreate: bool = True):
                 size=EMBEDDING_DIM,
                 distance=models.Distance.COSINE,
             ),
+            sparse_vectors_config={
+                "bm25": models.SparseVectorParams(
+                    modifier=models.Modifier.IDF
+                )
+            }
         )
-        print(f"[QDRANT] Collection '{COLLECTION_NAME}' created/recreated.")
+        print(f"[QDRANT] Collection '{COLLECTION_NAME}' created/recreated (Dense + BM25).")
 
         # Создаём payload-индексы — аналог CREATE INDEX в SQL.
         # Это позволяет быстро фильтровать чанки по категории
@@ -102,37 +107,29 @@ def init_collection(client: QdrantClient, recreate: bool = True):
         except Exception as e:
             print(f"[QDRANT] Note on payload index creation: {e}")
 
-def upsert_chunks_batch(client: QdrantClient, chunks: list, embeddings: list, batch_size: int = 100):
+def upsert_chunks_batch(client: QdrantClient, chunks: list, embeddings: list, sparse_embeddings: list, batch_size: int = 100):
     """
-    Загрузка чанков и их векторов в Qdrant батчами.
-
-    upsert = insert + update: если точка с таким ID уже есть — обновить.
-
-    Каждый «поинт» (Point) в Qdrant содержит:
-      - id       — уникальный идентификатор (chunk_id из чанкера)
-      - vector   — эмбеддинг [1024 float]
-      - payload  — метаданные (title, url, text, category, step_number, images...)
-
-    Аргументы:
-      chunks     — список словарей чанков (из chunker.py)
-      embeddings — соответствующие векторы (из embedder.py)
-      batch_size — сколько записей отправлять за один запрос (100)
+    Загрузка чанков и их векторов в Qdrant батчами (Hybrid Search: Dense + Sparse).
     """
     total = len(chunks)
 
-    # Отправляем данные порциями по batch_size штук
     for i in range(0, total, batch_size):
         batch_chunks = chunks[i:i + batch_size]
         batch_vectors = embeddings[i:i + batch_size]
+        batch_sparse = sparse_embeddings[i:i + batch_size]
 
-        # Формируем список «точек» для Qdrant
         points = []
-        for ch, vec in zip(batch_chunks, batch_vectors):
+        for ch, vec, s_vec in zip(batch_chunks, batch_vectors, batch_sparse):
+            # Векторы теперь словарь, т.к. их несколько (Dense по умолчанию + bm25)
+            vector_dict = {
+                "": vec.tolist() if hasattr(vec, "tolist") else list(vec), # Безымянный = Dense
+                "bm25": s_vec                                               # Именованный = Sparse
+            }
+            
             points.append(
                 models.PointStruct(
                     id=ch["chunk_id"],  # UUID чанка
-                    # Конвертируем numpy-массив в обычный список Python
-                    vector=vec.tolist() if hasattr(vec, "tolist") else list(vec),
+                    vector=vector_dict,
                     # Метаданные чанка — эти поля возвращаются при поиске
                     payload={
                         "chunk_id": ch["chunk_id"],
