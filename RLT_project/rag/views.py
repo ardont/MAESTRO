@@ -45,20 +45,18 @@ def api_ask(request):
     line_info = route_support_line(question)
 
     try:
+        # 1. Сохраняем входящее сообщение (в транзакции)
         with transaction.atomic():
-            # 3) Находим / создаем пользователя
             if user_id:
                 user = get_object_or_404(User, id=user_id)
             else:
                 user = User.objects.create(role="customer")
 
-            # 4) Находим / создаем чат
             if chat_id:
                 chat = get_object_or_404(Chat, id=chat_id)
             else:
                 chat = Chat.objects.create(user=user)
 
-            # 5) Сохраняем входящее сообщение пользователя
             in_msg_ser = MessageSerializer(data={
                 "chat": str(chat.id),
                 "author": str(user.id),
@@ -68,13 +66,14 @@ def api_ask(request):
                 return JsonResponse({"errors": in_msg_ser.errors}, status=400)
             in_msg = in_msg_ser.save()
 
-            # 6) Получаем ответ из RAG пайплайна с учетом категории линии
-            rag_res = rag_pipeline(question, category_filter=line_info.get("category_filter"))
-            answer_text = rag_res.get("answer", "")
-            citations = rag_res.get("citations", [])
-            images = rag_res.get("images", [])
+        # 2. Вызываем RAG и LLM (ВНЕ ТРАНЗАКЦИИ, чтобы не лочить базу!)
+        rag_res = rag_pipeline(question, category_filter=line_info.get("category_filter"))
+        answer_text = rag_res.get("answer", "")
+        citations = rag_res.get("citations", [])
+        images = rag_res.get("images", [])
 
-            # 7) Создаем сообщение от бота
+        # 3. Сохраняем ответ бота (в новой транзакции)
+        with transaction.atomic():
             bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
             out_msg_ser = MessageSerializer(data={
                 "chat": str(chat.id),
