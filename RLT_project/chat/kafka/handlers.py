@@ -27,7 +27,7 @@ async def new_message_handler(
     prompt = new_message.data.text
     full_msg = ''
     token_id = 0
-    logger.info(f"New message: {prompt}; id: {new_message.data.id}")
+    logger.info(f"New message: {prompt}; chat_id: {new_message.data.chat_id}")
     async for llm_event in stream_local_llm_response(prompt):
         if llm_event.event == LLM_TOKEN_EVENT:
             await broker.publish(
@@ -41,7 +41,7 @@ async def new_message_handler(
                 ),
                 headers={'event_name': EVENT_NEW_TOKEN},
                 topic=LLM_RESPONSE_TOPIC,
-                group=new_message.data.chat_id,
+                key=str(new_message.data.chat_id).encode(),
             )
             token_id += 1
             full_msg += llm_event.data
@@ -60,7 +60,7 @@ async def new_message_handler(
                     ),
                     headers={'event_name': EVENT_END_GENERATION},
                     topic=LLM_RESPONSE_TOPIC,
-                    group=new_message.data.chat_id,
+                    key=str(new_message.data.chat_id).encode(),
                 )
 
             else:
@@ -75,7 +75,7 @@ async def new_message_handler(
                 ),
                 headers={'event_name': EVENT_END_GENERATION},
                 topic=LLM_RESPONSE_TOPIC,
-                group=new_message.data.chat_id,
+                key=str(new_message.data.chat_id).encode(),
             )
         elif llm_event.event == LLM_ERROR_EVENT:
             await broker.publish(
@@ -90,7 +90,7 @@ async def new_message_handler(
                 ),
                 headers={'event_name': EVENT_END_GENERATION},
                 topic=LLM_RESPONSE_TOPIC,
-                group=new_message.data.chat_id,
+                key=str(new_message.data.chat_id).encode(),
             )
         else:
             raise RuntimeError(llm_event.event)

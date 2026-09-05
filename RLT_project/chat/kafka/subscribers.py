@@ -21,7 +21,7 @@ async def llm_request_handler(msg: KafkaMessage):
         body = msg.body.decode()
         logger.info(f"BODY: {body}")
 
-        msg_event = NewMessageEvent.from_json(body)
+        msg_event = NewMessageEvent.model_validate_json(body)
         logger.info(f"EVENT: {msg_event}")
 
         logger.info("CALL HANDLER")

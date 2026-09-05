@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
   kafka:
     image: confluentinc/cp-kafka:7.9.0
-    container_name: alpharag_kafka
+    container_name: maestro_kafka
     hostname: kafka
     ports:
       - "9092:9092"
