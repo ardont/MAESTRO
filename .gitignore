@@ -52,6 +52,10 @@ node_modules/
 /sandbox/
 
 
+# --- Личные датасеты
+/txt_dataset/roseltorg_kb/
+/txt_dataset/roseltorg_knowledge_base_full.txt
+
 dataset
 dataset/
 /dataset
