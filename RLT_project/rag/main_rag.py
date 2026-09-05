@@ -109,7 +109,7 @@ def search_in_qdrant(query: str, top_k: int = 3, category_filter: str = None):
     """
     Семантический поиск (HYBRID SEARCH: Dense + BM25):
     """
-    from RLT_project.rag.indexer.embedder import get_embedder, get_sparse_embedder
+    from rag.indexer.embedder import get_embedder, get_sparse_embedder
     
     vector = get_embedder().get_embedding(query).tolist()
     sparse_vector = get_sparse_embedder().get_sparse_embedding(query)
