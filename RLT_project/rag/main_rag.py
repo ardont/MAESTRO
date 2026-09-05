@@ -157,16 +157,22 @@ def rag_pipeline(user_message: str, category_filter: str = None):
     3. Проверка порога уверенности
     4. Формирование ответа через LLM или умный синтез из базы знаний
     """
+    import time
+    
+    print(f"\n--- [RAG PIPELINE] СТАРТ ЗАПРОСА: '{user_message}' ---")
+    t0 = time.time()
     normalized_query = normalise_query(user_message, TERMINS)
 
     # Шаг 1: Поиск в Qdrant
+    t1 = time.time()
     hits = search_in_qdrant(normalized_query, top_k=3, category_filter=category_filter)
-
-    # Если с фильтром ничего не найдено - пробуем глобальный поиск без фильтра
     if not hits and category_filter:
         hits = search_in_qdrant(normalized_query, top_k=3, category_filter=None)
+    t2 = time.time()
+    print(f"[RAG PIPELINE] Поиск в Qdrant занял: {t2 - t1:.2f} сек. Найдено документов: {len(hits)}")
 
     if not hits:
+        print("[RAG PIPELINE] Документы не найдены, возврат заглушки.")
         return {
             "answer": "К сожалению, в официальной базе знаний пока нет регламентированного ответа на данный вопрос. Пожалуйста, обратитесь к дежурному специалисту службы поддержки.",
             "citations": [],
@@ -218,7 +224,12 @@ def rag_pipeline(user_message: str, category_filter: str = None):
 4. В конце укажи главный первоисточник в формате: "Источник: {citations[0]['title'] if citations else 'База знаний'} ({citations[0]['url'] if citations else ''})"
 """
 
+    print(f"[RAG PIPELINE] Отправка запроса в локальную LLM (Ollama)... Ждем генерации...")
+    t3 = time.time()
     llm_answer = _call_local_gpt(prompt)
+    t4 = time.time()
+    print(f"[RAG PIPELINE] Генерация LLM заняла: {t4 - t3:.2f} сек.")
+    print(f"--- [RAG PIPELINE] КОНЕЦ ЗАПРОСА ---")
     
     # Очищаем системные маркеры thinking, если модель их выводит
     marker = "...done thinking."
