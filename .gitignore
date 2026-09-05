@@ -56,9 +56,13 @@ node_modules/
 /txt_dataset/roseltorg_kb/
 /txt_dataset/roseltorg_knowledge_base_full.txt
 
-dataset
 dataset/
-/dataset
 /dataset/1_legislation/
 /dataset/2_instructions/
 /dataset/images/
+/txt_dataset/local_files/
+/dataset/
+
+# --- Личные датасеты
+/txt_dataset/roseltorg_kb/
+/txt_dataset/roseltorg_knowledge_base_full.txt
