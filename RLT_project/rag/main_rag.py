@@ -44,8 +44,8 @@ def _get_active_ollama_model() -> str:
             models_list = r.json().get("models", [])
             installed = [m.get("name") for m in models_list if m.get("name")]
             if installed:
-                # Проверяем приоритетные модели по порядку
-                for preferred in ["gpt-oss:20b", "gpt-oss", "qwen2.5:7b", "llama3.2", "mistral", "gemma"]:
+                # Приоритет: легкие быстрые модели (3B-8B) в начале, тяжелые (20b) в конце
+                for preferred in ["llama3.2", "qwen2.5:3b", "qwen2.5:7b", "mistral", "gemma", "gpt-oss:20b", "gpt-oss"]:
                     for m in installed:
                         if preferred in m:
                             return m
