@@ -49,7 +49,7 @@ class RoSBERTaEmbedder:
         # Токенизатор: превращает текст в последовательность чисел (token IDs)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         # Сама BERT-модель: принимает token IDs → возвращает эмбеддинги
-        self.model = AutoModel.from_pretrained(model_name, use_safetensors=False)
+        self.model = AutoModel.from_pretrained(model_name)
         self.model.to(self.device)  # Переносим модель на выбранное устройство
         self.model.eval()           # Режим вывода (отключаем dropout и batch normalization)
 

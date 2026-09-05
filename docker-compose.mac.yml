@@ -30,3 +30,4 @@ services:
       - QDRANT_PORT=6333
       # Если Ollama стоит на самом сервере, докер сможет до нее достучаться через host.docker.internal
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - HF_HUB_ENABLE_HF_TRANSFER=0
