@@ -30,6 +30,14 @@ async def new_message_handler(
     logger.info(f"New message: {prompt}; chat_id: {new_message.data.chat_id}")
     async for llm_event in stream_local_llm_response(prompt):
         if llm_event.event == LLM_TOKEN_EVENT:
+            logger.info(
+                "Kafka publish: key=%r (%s), headers=%r, event=%r (%s)",
+                new_message.data.chat_id,
+                type(new_message.data.chat_id),
+                {"event_name": EVENT_NEW_TOKEN},
+                llm_event.data,
+                type(llm_event.data),
+            )
             await broker.publish(
                 NewTokenEvent(
                     data=NewTokenData(
@@ -41,11 +49,16 @@ async def new_message_handler(
                 ),
                 headers={'event_name': EVENT_NEW_TOKEN},
                 topic=LLM_RESPONSE_TOPIC,
-                key=str(new_message.data.chat_id).encode(),
+                key=new_message.data.chat_id,
             )
             token_id += 1
             full_msg += llm_event.data
         elif llm_event.event == LLM_DONE_EVENT:
+            logger.info(
+                "PUBLISH END_GENERATION pid=%s chat_id=%s",
+                os.getpid(),
+                new_message.data.chat_id,
+            )
             if llm_event.redirected_to == REDIRECTED_TO_OPERATOR:
                 await broker.publish(
                     EndGenerationEvent(
@@ -60,7 +73,7 @@ async def new_message_handler(
                     ),
                     headers={'event_name': EVENT_END_GENERATION},
                     topic=LLM_RESPONSE_TOPIC,
-                    key=str(new_message.data.chat_id).encode(),
+                    key=new_message.data.chat_id,
                 )
 
             else:
@@ -75,7 +88,7 @@ async def new_message_handler(
                 ),
                 headers={'event_name': EVENT_END_GENERATION},
                 topic=LLM_RESPONSE_TOPIC,
-                key=str(new_message.data.chat_id).encode(),
+                key=new_message.data.chat_id,
             )
         elif llm_event.event == LLM_ERROR_EVENT:
             await broker.publish(
@@ -90,7 +103,7 @@ async def new_message_handler(
                 ),
                 headers={'event_name': EVENT_END_GENERATION},
                 topic=LLM_RESPONSE_TOPIC,
-                key=str(new_message.data.chat_id).encode(),
+                key=new_message.data.chat_id,
             )
         else:
             raise RuntimeError(llm_event.event)

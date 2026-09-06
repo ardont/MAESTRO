@@ -7,21 +7,13 @@ from faststream.kafka import KafkaBroker
 KAFKA_URL = os.getenv("KAFKA_URL", "kafka:29092")
 
 
-def json_serializer(data) -> bytes:
-    return json.dumps(
-        data,
-        ensure_ascii=False,
-    ).encode("utf-8")
-
-
-def key_serializer(data) -> bytes:
-    return str(data).encode("utf-8")
+def serialize_kafka_key(value: object) -> bytes:
+    return str(value).encode("utf-8")
 
 
 broker = KafkaBroker(
     KAFKA_URL,
-    key_serializer=key_serializer,
-    value_serializer=json_serializer,
+    key_serializer=serialize_kafka_key,
 )
 
 app = FastStream(broker)
