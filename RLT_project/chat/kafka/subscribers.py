@@ -13,7 +13,7 @@ if llm_request_topic is None:
 
 logger = getLogger(__name__)
 
-@broker.subscriber(llm_request_topic, group_id="llm-workers")
+@broker.subscriber(llm_request_topic, group_id="llm-workers", max_workers=2)
 async def llm_request_handler(msg: KafkaMessage):
     try:
         logger.info("SUBSCRIBER START")

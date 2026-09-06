@@ -1,59 +1,4 @@
-
 services:
-  # Веб-интерфейс для управления и мониторинга Kafka
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka_ui
-    ports:
-      - "8081:8080"   # UI будет доступен на http://localhost:8081
-    environment:
-      # Указываем кластер Kafka (может быть несколько, но у нас один)
-      - KAFKA_CLUSTERS_0_NAME=local
-      # Внутренний адрес брокера внутри сети Docker
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
-      # Для KRaft (без Zookeeper) не нужно указывать ZK
-      # Опционально: можно добавить внешний адрес для отображения в интерфейсе
-      # - KAFKA_CLUSTERS_0_PROPERTIES_BOOTSTRAP_SERVERS=localhost:9092
-    depends_on:
-      - kafka
-    restart: unless-stopped
-  kafka:
-    image: confluentinc/cp-kafka:7.9.0
-    container_name: maestro_kafka
-    hostname: kafka
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_PROCESS_ROLES: broker,controller
-      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_NODE_ID: 1
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
-
-      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
-
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
-
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "kafka-broker-api-versions --bootstrap-server kafka:29092 >/dev/null 2>&1"
-        ]
-      interval: 5s
-      timeout: 10s
-      retries: 20
-      start_period: 10s
-  # Отдельный надежный сервер для векторной базы
   qdrant:
     image: dockerhub.timeweb.cloud/qdrant/qdrant:latest
     container_name: rlt_qdrant
@@ -62,7 +7,6 @@ services:
     volumes:
       - ./qdrant_storage:/qdrant/storage
 
-  # Наш Django-бэкенд и RAG
   web:
     build:
       context: .
@@ -72,12 +16,12 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8080:8000"
+
     depends_on:
       qdrant:
         condition: service_started
-      kafka:
-        condition: service_healthy
+
     environment:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
@@ -85,3 +29,13 @@ services:
       - KAFKA_URL=kafka:29092
       - LLM_REQUEST_TOPIC=${LLM_REQUEST_TOPIC}
       - LLM_RESPONSE_TOPIC=${LLM_RESPONSE_TOPIC}
+
+    networks:
+      - default
+      - shared
+
+
+networks:
+  shared:
+    external: true
+    name: rlt_hack_network
