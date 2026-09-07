@@ -1,6 +1,8 @@
 import os
 from logging import getLogger
 
+from faststream.kafka import KafkaBroker
+
 from .events import NewMessageEvent, NewTokenEvent, NewTokenData, EndGenerationEvent, EndGenerationData
 from rag.stream import (
     stream_local_llm_response,
@@ -20,6 +22,35 @@ logger = getLogger(__name__)
 LLM_RESPONSE_TOPIC = os.getenv("LLM_RESPONSE_TOPIC")
 if LLM_RESPONSE_TOPIC is None:
     raise ValueError("LLM_RESPONSE_TOPIC is required")
+
+async def publish_error_msg(broker: KafkaBroker, topic: str, new_message: NewMessageEvent, error: str):
+    await broker.publish(
+        NewTokenEvent(
+            data=NewTokenData(
+                user_uuid=new_message.data.user_uuid,
+                chat_id=new_message.data.chat_id,
+                token=error,
+                id=0,
+            )
+        ),
+        headers={'event_name': EVENT_NEW_TOKEN},
+        topic=LLM_RESPONSE_TOPIC,
+        key=new_message.data.chat_id,
+    )
+    await broker.publish(
+        EndGenerationEvent(
+            data=EndGenerationData(
+                user_uuid=new_message.data.user_uuid,
+                chat_id=new_message.data.chat_id,
+                details="Error",
+                all_text=error,
+            ),
+            meta={"error": True},
+        ),
+        headers={'event_name': EVENT_END_GENERATION},
+        topic=topic,
+        key=new_message.data.chat_id,
+    )
 
 async def new_message_handler(
         new_message: NewMessageEvent,
@@ -91,19 +122,11 @@ async def new_message_handler(
                 key=new_message.data.chat_id,
             )
         elif llm_event.event == LLM_ERROR_EVENT:
-            await broker.publish(
-                EndGenerationEvent(
-                    data=EndGenerationData(
-                        user_uuid=new_message.data.user_uuid,
-                        chat_id=new_message.data.chat_id,
-                        details="Error",
-                        all_text="При обработке запроса произошла ошибка, попробуйте еще раз"
-                    ),
-                    meta={"error": True},
-                ),
-                headers={'event_name': EVENT_END_GENERATION},
+            await publish_error_msg(
+                broker=broker,
                 topic=LLM_RESPONSE_TOPIC,
-                key=new_message.data.chat_id,
+                new_message=new_message,
+                error="Извините, при обработке вашего запролса произошла ошибка, попробуйте еще раз позднее",
             )
         else:
             raise RuntimeError(llm_event.event)
