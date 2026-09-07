@@ -6,8 +6,11 @@ from abc import ABC
 import aiohttp
 from pydantic import BaseModel
 
+import os
 
-IS_TESTING = True
+OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+IS_TESTING = False
 
 class LLMBaseEvent(BaseModel, ABC):
     event: str
@@ -45,7 +48,7 @@ async def stream_local_llm_response(prompt: str, model_name: str = "gpt-oss:20b"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                "http://localhost:11434/api/generate",
+                f"{OLLAMA_BASE_URL}/api/generate",
                 json={
                     "model": model_name,
                     "prompt": prompt,
@@ -74,9 +77,11 @@ async def stream_local_llm_response(prompt: str, model_name: str = "gpt-oss:20b"
                                 yield LLMTokenEvent(data=token)
                 else:
                     # Обработка ошибки HTTP
+                    print(data=f"HTTP {resp.status}: {await resp.text()}")
                     yield LLMErrorEvent(data=f"HTTP {resp.status}: {await resp.text()}")
                     return
     except Exception as e:
+        print(e)
         yield LLMErrorEvent(data=str(e))
         return
 
