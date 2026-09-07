@@ -18,9 +18,11 @@ sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
 
-echo 'Fixing Docker daemon...'
-sudo rm -f /etc/docker/daemon.json
-sudo systemctl restart docker
+echo 'Checking NVIDIA runtime in Docker...'
+if ! sudo grep -q "nvidia" /etc/docker/daemon.json 2>/dev/null; then
+    sudo nvidia-ctk runtime configure --runtime=docker
+    sudo systemctl restart docker
+fi
 
 echo 'Rebuilding and restarting Web container...'
 sudo docker compose up --build -d

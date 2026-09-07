@@ -88,7 +88,7 @@ def get_embeddings_local(
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
 
-COLLECTION_NAME = "roseltorg"
+COLLECTION_NAME = "data_files"
 FILE_GLOB = "parsed_data.json"
 
 def ensure_qdrant_collection(

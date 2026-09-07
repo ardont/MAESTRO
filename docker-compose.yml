@@ -1,4 +1,7 @@
+version: '3.8'
+
 services:
+  # Отдельный надежный сервер для векторной базы
   qdrant:
     image: dockerhub.timeweb.cloud/qdrant/qdrant:latest
     container_name: rlt_qdrant
@@ -7,35 +10,30 @@ services:
     volumes:
       - ./qdrant_storage:/qdrant/storage
 
+  # Наш Django-бэкенд и RAG
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: rlt_django
     command: bash -c "cd RLT_project && python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
+      - /home/rama/.cache:/root/.cache
     ports:
-      - "8080:8000"
-
+      - "8001:8000"
     depends_on:
-      qdrant:
-        condition: service_started
-
+      - qdrant
     environment:
+      # Настраиваем бэкенд на подключение к Qdrant внутри сети докера
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+      # Если Ollama стоит на самом сервере, докер сможет до нее достучаться через host.docker.internal
       - OLLAMA_HOST=http://host.docker.internal:11434
-      - KAFKA_URL=kafka:29092
-      - LLM_REQUEST_TOPIC=${LLM_REQUEST_TOPIC}
-      - LLM_RESPONSE_TOPIC=${LLM_RESPONSE_TOPIC}
-
-    networks:
-      - default
-      - shared
-
-
-networks:
-  shared:
-    external: true
-    name: rlt_hack_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

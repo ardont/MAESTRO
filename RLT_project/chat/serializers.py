@@ -36,7 +36,7 @@ UserSerializer = create_auto_serializer(
 
 ChatSerializer = create_auto_serializer(
     Chat,
-    new_fields=['id', 'user', 'assigned_to', 'created_at']
+    new_fields=['id', 'user', 'assigned_to', 'context_cache', 'active_workflow', 'current_step', 'collected_data', 'created_at']
 )
 
 MessageSerializer = create_auto_serializer(

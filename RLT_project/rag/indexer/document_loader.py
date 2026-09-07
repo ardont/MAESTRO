@@ -127,7 +127,7 @@ def load_all_documents(include_legislation: bool = True) -> List[Dict[str, Any]]
                     documents.append({
                         "text": content,
                         "title": clean_title,
-                        "url": f"https://www.consultant.ru/document/cons_doc_LAW_{abs(hash(leg_file.name))%100000}/",
+                        "url": "https://zakupki.mos.ru/knowledgebase/regulations",
                         "category": cat,
                         "doc_type": "legislation",
                         "file_name": leg_file.name,
@@ -174,7 +174,7 @@ def load_all_documents(include_legislation: bool = True) -> List[Dict[str, Any]]
                         documents.append({
                             "text": clean_text_body,
                             "title": real_title,
-                            "url": real_url,
+                            "url": real_url if (real_url and real_url.startswith("https://zakupki.mos.ru")) else "https://zakupki.mos.ru/knowledgebase/main",
                             "category": cat,
                             "doc_type": "instruction",
                             "file_name": inst_file.name,

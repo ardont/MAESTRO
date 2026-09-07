@@ -27,11 +27,11 @@ LEG_DIR = DATASET_DIR / "1_legislation"
 # Подпапка: все инструкции и статьи
 INST_DIR = DATASET_DIR / "2_instructions"
 
-# Статьи базы знаний, скачанные с сайта Росэлторг парсером
-INST_KB_DIR = INST_DIR / "roseltorg_kb_articles"
+# Статьи базы знаний, скачанные с Портала поставщиков Москвы (zakupki.mos.ru)
+INST_KB_DIR = INST_DIR / "portal_kb_articles"
 
-# Официальные PDF-инструкции и регламенты площадки
-INST_OFFICIAL_DIR = INST_DIR / "roseltorg_official_docs"
+# Официальные инструкции и регламенты Портала
+INST_OFFICIAL_DIR = INST_DIR / "portal_official_docs"
 
 # Кэш PDF-файлов — чтобы не скачивать одно и то же повторно
 PDF_CACHE_DIR = BASE_DIR / "pdf_cache"

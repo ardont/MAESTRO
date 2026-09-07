@@ -18,6 +18,11 @@ class Chat(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='assigned_chats')
+    # Память контекста диалога и состояние пошагового Workflow
+    context_cache = models.JSONField(default=list, blank=True)
+    active_workflow = models.CharField(max_length=100, null=True, blank=True)
+    current_step = models.IntegerField(default=0)
+    collected_data = models.JSONField(default=dict, blank=True)
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')

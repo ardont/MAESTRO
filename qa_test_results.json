@@ -1,0 +1,442 @@
+{
+  "timestamp": "2026-09-07 09:05:21",
+  "total_tests": 25,
+  "passed_tests": 25,
+  "unique_urls_count": 65,
+  "valid_200_urls_count": 65,
+  "errors_404_count": 0,
+  "roseltorg_mentions_count": 0,
+  "all_urls_status": {
+    "https://zakupki.mos.ru/knowledgebase/article/559646": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/559648": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/46ac0zd3ewy0tt5ffx1h9zd5mx": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/559641": 200,
+    "https://cryptopro.ru/check": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/506376": 200,
+    "https://chrome.google.com/webstore/detail/cryptopro-extension-for-c/iifchhfnnmpdbibifmljnfjhpififfog": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/220153": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508873": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508580": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508592": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508590": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/4gtfe46htq9ar7804w2j8g5gcy": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/171594": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508688": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235895": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508690": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235430": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/214102": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/214180": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/215918": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/214359": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/48caq6vpp4pn97wbaxsfxnbn4b": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/588549": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/588150": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/587901": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/588142": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235765": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235738": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/565103": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/291019": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/291024": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/291029": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/305524": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235799": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235796": 200,
+    "https://zakupki.mos.ru/knowledgebase/regulations": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/213787": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/214248": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/214196": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235797": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/507199": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235798": 200,
+    "https://zakupki.mos.ru": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/221158": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/589954": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508890": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/4gqp5s76ny8cst0td5nsbe1jd5": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508914": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508916": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/49hpw7tckn9w9vq3bvxjzypcnv": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/4wpaxbw1ss8ppvzj30s99cxmxa": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508805": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/220985": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/508711": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/213804": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/213825": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/221523": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235744": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/235753": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/506364": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/171501": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/214190": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/42we7zhjby4nw2pgmdrk8eddwx": 200,
+    "https://zakupki.mos.ru/knowledgebase/article/details/cms/4jx54dvpmthnr0w1e0xb7cvxx0": 200
+  },
+  "details": [
+    {
+      "id": 1,
+      "question": "Как зарегистрироваться на Портале поставщиков индивидуальному предпринимателю?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/559646": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/559648": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/46ac0zd3ewy0tt5ffx1h9zd5mx": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/559641": 200
+      },
+      "elapsed_sec": 12.1,
+      "answer_preview": "Для регистрации индивидуального предпринимателя на Портале поставщиков Москвы (zakupki.mos.ru) следует следовать следующему шагам:  1. Перейдите на гл"
+    },
+    {
+      "id": 2,
+      "question": "Как настроить плагин КриптоПро для работы на Портале поставщиков?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://cryptopro.ru/check": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/506376": 200,
+        "https://chrome.google.com/webstore/detail/cryptopro-extension-for-c/iifchhfnnmpdbibifmljnfjhpififfog": 200
+      },
+      "elapsed_sec": 37.27,
+      "answer_preview": "Для настройки плагина КриптоПро для работы на Портале поставщиков Москвы (zakupki.mos.ru) и в целом для взаимодействия с государственными порталами, с"
+    },
+    {
+      "id": 3,
+      "question": "Что такое котировочная сессия и как в ней участвовать?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/220153": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508873": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508580": 200
+      },
+      "elapsed_sec": 23.41,
+      "answer_preview": "### Ответ на вопрос пользователя  Котировочная сессия — это мини-аукцион, где поставщики конкурируют друг с другом, снижая начальную цену контракта. П"
+    },
+    {
+      "id": 4,
+      "question": "Кто признается победителем котировочной сессии?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/508592": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508590": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/4gtfe46htq9ar7804w2j8g5gcy": 200
+      },
+      "elapsed_sec": 10.1,
+      "answer_preview": "1. Победителем котировочной сессии признается участник, который объявил последнюю (наименьшую) ставку до окончания котировочной сессии.  2. Если побед"
+    },
+    {
+      "id": 5,
+      "question": "В каких случаях победа переходит ко второму участнику котировочной сессии?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/508592": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/171594": 200
+      },
+      "elapsed_sec": 8.5,
+      "answer_preview": "1. Определите победителя котировочной сессии по минимальной цене, предложенной участниками.  2. Если победитель не выполняет обязанность по подписанию"
+    },
+    {
+      "id": 6,
+      "question": "Что делать, если не получается сделать ставку в активной котировочной сессии?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/508688": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235895": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508690": 200
+      },
+      "elapsed_sec": 9.68,
+      "answer_preview": "1. Проверьте дату и время начала котировочной сессии. Объявление ставки возможно только после ее начала.  2. Убедитесь, что вы полностью зарегистриров"
+    },
+    {
+      "id": 7,
+      "question": "Как создать заявку на добавление новой позиции в каталог СТЕ?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235430": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/214102": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/214180": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/215918": 200
+      },
+      "elapsed_sec": 17.89,
+      "answer_preview": "Для создания заявки на добавление новой позиции в каталог СТЕ необходимо следовать следующим шагам:  1. **Просмотр существующих СТЕ:**    - Перейдите "
+    },
+    {
+      "id": 8,
+      "question": "Сколько характеристик нужно заполнить для добавления СТЕ?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/214180": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/214359": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/48caq6vpp4pn97wbaxsfxnbn4b": 200
+      },
+      "elapsed_sec": 8.2,
+      "answer_preview": "1. Ознакомьтесь с определением СТЕ (стандартная товарная единица) в разделе \"Что такое СТЕ?\". 2. Для заполнения характеристик СТЕ необходимо использов"
+    },
+    {
+      "id": 9,
+      "question": "Что делать при возникновении интеграционных ошибок РДИК_1004 или РДИК_1043?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/588549": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/588150": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/587901": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/588142": 200
+      },
+      "elapsed_sec": 13.92,
+      "answer_preview": "Для устранения интеграционных ошибок РДИК_1004 или РДИК_1043, выполните следующие шаги:  1. Проверьте ранее направленные исполнения и соответствующую "
+    },
+    {
+      "id": 10,
+      "question": "Как сформировать и подписать УПД при электронном исполнении контракта?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235765": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235738": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/565103": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/291019": 200
+      },
+      "elapsed_sec": 9.04,
+      "answer_preview": "1. Убедитесь, что УПД подписан поставщиком и имеет статус \"Отправлено (Отправлено и получено Оператором ЭДО)\".  2. Перейдите в раздел исполнения контр"
+    },
+    {
+      "id": 11,
+      "question": "Как перевести УПД в статус редактирования через оператора Калуга Астрал?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/291024": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/291019": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/291029": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/305524": 200
+      },
+      "elapsed_sec": 13.39,
+      "answer_preview": "Для перевода УПД в статус редактирования через оператора Калуга Астрал необходимо следовать следующим шагам:  1. **Убедитесь, что УПД находится в нужн"
+    },
+    {
+      "id": 12,
+      "question": "Как вернуть УПД в статус Черновик при электронном актировании через ЕИС?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235738": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/291019": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/291029": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/305524": 200
+      },
+      "elapsed_sec": 8.02,
+      "answer_preview": "1. Проверьте статус УПД на портале zakupki.mos.ru. Убедитесь, что документ находится в статусе \"Отправлено (Отправлено и получено Оператором ЭДО)\".  2"
+    },
+    {
+      "id": 13,
+      "question": "Как подать жалобу в ФАС по 44-ФЗ при неправомерном отклонении заявки?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235799": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235796": 200,
+        "https://zakupki.mos.ru/knowledgebase/regulations": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/213787": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/214248": 200
+      },
+      "elapsed_sec": 26.34,
+      "answer_preview": "### Ответ на вопрос пользователя  Для подачи жалобы в Федеральную антимонопольную службу (ФАС России) по 44-ФЗ при неправомерном отклонении заявки нео"
+    },
+    {
+      "id": 14,
+      "question": "В какие сроки можно подать жалобу на положения извещения по 44-ФЗ?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235799": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/214196": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235796": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/48caq6vpp4pn97wbaxsfxnbn4b": 200
+      },
+      "elapsed_sec": 11.53,
+      "answer_preview": "1. Для начала необходимо определиться, что именно подается как жалоба — на положения извещения или на действия/решения заказчика.  2. Если речь идет о"
+    },
+    {
+      "id": 15,
+      "question": "Как подать жалобу о необоснованной автоматической блокировке на Портале?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235797": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/507199": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235796": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235798": 200
+      },
+      "elapsed_sec": 13.26,
+      "answer_preview": "1. Войдите в свой личный кабинет на Портале поставщиков Москвы (zakupki.mos.ru). 2. Найдите и нажмите на свое название организации в шапке портала, за"
+    },
+    {
+      "id": 16,
+      "question": "Где найти реестр жалоб поставщика при автоматической блокировке?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/235796": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235798": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235797": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/507199": 200,
+        "https://zakupki.mos.ru": 200
+      },
+      "elapsed_sec": 9.46,
+      "answer_preview": "1. Перейдите на официальный сайт Портала поставщиков Москвы (https://zakupki.mos.ru). 2. Войдите в свой личный кабинет. 3. Найдите и кликните на свое "
+    },
+    {
+      "id": 17,
+      "question": "Что такое закупка по потребностям на Портале поставщиков?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/221158": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/589954": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508890": 200
+      },
+      "elapsed_sec": 11.33,
+      "answer_preview": "1. **Определение закупки по потребностям:** Закупка по потребностям — это форма закупки, при которой заказчик публикует список необходимых товаров, ра"
+    },
+    {
+      "id": 18,
+      "question": "Может ли поставщик отозвать свою оферту в закупке по потребностям?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/4gqp5s76ny8cst0td5nsbe1jd5": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508914": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508916": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/49hpw7tckn9w9vq3bvxjzypcnv": 200
+      },
+      "elapsed_sec": 10.65,
+      "answer_preview": "1. Проверьте, находится ли закупка по потребностям в статусе «Приём предложений завершён». Если закупка ещё не перешла в этот статус, то поставщик мож"
+    },
+    {
+      "id": 19,
+      "question": "Как подписать массово все оферты по итогам котировочных сессий?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/4wpaxbw1ss8ppvzj30s99cxmxa": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508805": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/220985": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/508711": 200
+      },
+      "elapsed_sec": 19.11,
+      "answer_preview": "Для массового подтверждения подписи оферты по итогам котировочной сессии необходимо выполнить следующие шаги:  1. **Перейти на страницу котировочной с"
+    },
+    {
+      "id": 20,
+      "question": "Что делать, если контракт не появился из региональной информационной системы?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/213804": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/213825": 200
+      },
+      "elapsed_sec": 6.02,
+      "answer_preview": "1. Проверьте, правильно ли указан реестровый номер контракта и данные заказчика. 2. Если все данные верны, обратитесь в службу технической поддержки п"
+    },
+    {
+      "id": 21,
+      "question": "Как проверить наличие регистрации организации в электронном документообороте (ЭДО)?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/221523": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235744": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235753": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/235765": 200,
+        "https://zakupki.mos.ru": 200
+      },
+      "elapsed_sec": 7.24,
+      "answer_preview": "1. Перейдите на официальный сайт Портала поставщиков Москвы (https://zakupki.mos.ru). 2. Войдите в свой личный кабинет, используя учетные данные, пред"
+    },
+    {
+      "id": 22,
+      "question": "Как зарегистрироваться на Портале поставщиков физическому лицу?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/559646": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/559648": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/506364": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/559641": 200
+      },
+      "elapsed_sec": 10.91,
+      "answer_preview": "Чтобы зарегистрироваться на Портале поставщиков как физическое лицо, выполните следующие шаги:  1. Перейдите на главную страницу портала zakupki.mos.r"
+    },
+    {
+      "id": 23,
+      "question": "Какие особенности закупок у единственного поставщика по 44-ФЗ?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/171501": 200
+      },
+      "elapsed_sec": 11.31,
+      "answer_preview": "1. **Определение закупки у единственного поставщика**: В соответствии с Федеральным законом № 44-ФЗ, закупка у единственного поставщика допускается то"
+    },
+    {
+      "id": 24,
+      "question": "Как получить статус производителя на Портале поставщиков Москвы?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/214190": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/559648": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/506364": 200
+      },
+      "elapsed_sec": 14.77,
+      "answer_preview": "Для получения статуса производителя на Портале поставщиков Москвы, необходимо выполнить следующие шаги:  1. **Зарегистрироваться или авторизоваться на"
+    },
+    {
+      "id": 25,
+      "question": "Каковы сроки рассмотрения заказчиком документа о приемке по 44-ФЗ?",
+      "passed": true,
+      "has_source": true,
+      "roseltorg_mentions": 0,
+      "urls_checked": {
+        "https://zakupki.mos.ru/knowledgebase/article/214196": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/42we7zhjby4nw2pgmdrk8eddwx": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/4jx54dvpmthnr0w1e0xb7cvxx0": 200,
+        "https://zakupki.mos.ru/knowledgebase/article/details/cms/49hpw7tckn9w9vq3bvxjzypcnv": 200
+      },
+      "elapsed_sec": 16.06,
+      "answer_preview": "1. **Определение срока рассмотрения документа о приемке:** В соответствии с нормативными требованиями, установленными для региональных заказчиков по Ф"
+    }
+  ]
+}
