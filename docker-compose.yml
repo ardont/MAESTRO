@@ -25,8 +25,8 @@ services:
       - QDRANT_PORT=6333
       - OLLAMA_HOST=http://host.docker.internal:11434
       - KAFKA_URL=kafka:29092
-      - LLM_REQUEST_TOPIC=${LLM_REQUEST_TOPIC}
-      - LLM_RESPONSE_TOPIC=${LLM_RESPONSE_TOPIC}
+      - LLM_REQUEST_TOPIC=llm-requests
+      - LLM_RESPONSE_TOPIC=llm-responses
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
