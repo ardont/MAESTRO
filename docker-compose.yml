@@ -7,21 +7,6 @@ services:
     volumes:
       - ./qdrant_storage:/qdrant/storage
 
-  kafka:
-    image: bitnami/kafka:latest
-    container_name: rlt_kafka
-    environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-    ports:
-      - "9092:9092"
-    networks:
-      - shared
-
   web:
     build: .
     container_name: rlt_django
@@ -34,13 +19,12 @@ services:
 
     depends_on:
       - qdrant
-      - kafka
 
     environment:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - OLLAMA_HOST=http://host.docker.internal:11434
-      - KAFKA_URL=kafka:9092
+      - KAFKA_URL=kafka:29092
       - LLM_REQUEST_TOPIC=llm-requests
       - LLM_RESPONSE_TOPIC=llm-responses
 
@@ -57,7 +41,3 @@ services:
 
     networks:
       - default
-      - shared
-
-networks:
-  shared:
