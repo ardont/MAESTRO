@@ -79,8 +79,16 @@ def api_ask(request):
     is_toxic = guardrail.get("is_blocked", False)
 
     if is_operator_requested or is_toxic:
-        # Назначаем чат на специалиста поддержки
-        support_agent, _ = User.objects.get_or_create(role="support_staff", defaults={"is_active": True})
+        # Назначаем чат на специалиста поддержки (Алгоритм: наименьшая загруженность)
+        from django.db.models import Count
+        support_agent = User.objects.filter(role="support_staff", is_active=True).annotate(
+            active_chats=Count('assigned_chats')
+        ).order_by('active_chats').first()
+        
+        if not support_agent:
+            # Фолбэк: если в базе вообще нет операторов, создаем дежурного
+            support_agent = User.objects.create(role="support_staff", is_active=True)
+            
         chat.assigned_to = support_agent
         chat.save(update_fields=["assigned_to"])
 

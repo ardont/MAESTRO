@@ -21,7 +21,22 @@ from .normalize_query import normalise_query, TERMINS
 from .search import search_hybrid
 from .graph_rag import find_graph_node, format_graph_context_for_llm, get_workflow_step_response
 
+import hashlib
+import redis
+
 logger = logging.getLogger("rag")
+
+redis_client = None
+try:
+    redis_client = redis.Redis(
+        host=os.environ.get('REDIS_HOST', 'localhost'),
+        port=int(os.environ.get('REDIS_PORT', 6379)),
+        db=0
+    )
+    redis_client.ping()
+except Exception as e:
+    logger.warning(f"Redis недоступен: {e}")
+    redis_client = None
 
 def _get_active_ollama_model() -> str:
     """
@@ -86,7 +101,21 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
     """
     t0 = time.time()
     logger.info(f"=== [RAG PIPELINE START] Запрос: '{user_message}' ===")
-    print(f"\n--- [RAG PIPELINE] СТАРТ ЗАПРОСА: '{user_message}' ---")
+    print(f"\\n--- [RAG PIPELINE] СТАРТ ЗАПРОСА: '{user_message}' ---")
+
+    # 0. ПРОВЕРКА В КЭШЕ REDIS
+    cache_key = None
+    if redis_client:
+        cache_key = f"rag_query:{hashlib.md5(user_message.lower().strip().encode('utf-8')).hexdigest()}"
+        try:
+            cached_result = redis_client.get(cache_key)
+            if cached_result:
+                logger.info(f"[REDIS CACHE] Найден кэш для запроса: {user_message}")
+                res = json.loads(cached_result.decode('utf-8'))
+                res['timings'] = {"search_sec": 0, "llm_sec": 0, "total_sec": round(time.time() - t0, 3)}
+                return res
+        except Exception as e:
+            logger.warning(f"[REDIS CACHE ERROR] {e}")
 
     # 1. ПРОВЕРКА КЭША КОНТЕКСТА В ЧАТЕ (ПРИОРИТЕТ 3)
     cached_context = []
@@ -203,10 +232,22 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
     primary_title = primary_citation.get("title") or "Портал поставщиков Москвы"
 
     # 5. СОСТАВЛЕНИЕ ПРОМПТА ДЛЯ LLM
+    chat_history_text = ""
+    if chat:
+        # Получаем последние 4 сообщения из чата (кроме текущего, которое уже добавлено в БД)
+        # Сортируем по created_at, чтобы получить хронологию
+        recent_messages = chat.messages.order_by('-created_at')[1:5]
+        if recent_messages:
+            history_lines = []
+            for m in reversed(recent_messages):
+                role_name = "Пользователь" if m.author.role == "customer" else "Ассистент"
+                history_lines.append(f"{role_name}: {m.text}")
+            chat_history_text = "История предыдущих сообщений диалога:\n" + "\n".join(history_lines) + "\n\n"
+
     prompt = f"""Ты — интеллектуальный эксперт службы поддержки пользователей Портала поставщиков Москвы (zakupki.mos.ru) и законодательства о закупках (44-ФЗ, 223-ФЗ).
 Ответь на вопрос пользователя, опираясь ИСКЛЮЧИТЕЛЬНО на предоставленную базу знаний и нормативные факты.
 
-Вопрос пользователя: "{user_message}"
+{chat_history_text}Вопрос пользователя: "{user_message}"
 
 База знаний:
 {full_context}
@@ -298,7 +339,7 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
     logger.info(f"=== [RAG PIPELINE END] Запрос обработан за {total_duration:.2f} сек. ===")
     print(f"--- [RAG PIPELINE] КОНЕЦ ЗАПРОСА (Всего: {total_duration:.2f} сек) ---")
 
-    return {
+    res = {
         "answer": llm_answer,
         "citations": citations,
         "images": images,
@@ -308,3 +349,16 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
             "total_sec": round(total_duration, 3)
         }
     }
+
+    if redis_client and cache_key:
+        try:
+            # Кэшируем на 24 часа
+            redis_client.setex(cache_key, 86400, json.dumps({
+                "answer": llm_answer,
+                "citations": citations,
+                "images": images
+            }, ensure_ascii=False))
+        except Exception as e:
+            logger.warning(f"[REDIS CACHE SET ERROR] {e}")
+
+    return res

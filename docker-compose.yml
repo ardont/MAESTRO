@@ -7,6 +7,12 @@ services:
     volumes:
       - ./qdrant_storage:/qdrant/storage
 
+  redis:
+    image: redis:alpine
+    container_name: rlt_redis
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     container_name: rlt_django
@@ -19,8 +25,11 @@ services:
 
     depends_on:
       - qdrant
+      - redis
 
     environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - OLLAMA_HOST=http://host.docker.internal:11434
