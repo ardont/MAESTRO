@@ -94,7 +94,7 @@ def load_articles_json(kb_path: Path) -> List[Dict[str, Any]]:
             documents.append({
                 "text": clean_text,
                 "title": title,
-                "url": f"https://zakupki.mos.ru/knowledgebase/article/details/ais/{art_id}",
+                "url": f"https://zakupki.mos.ru/knowledgebase/article/{art_id}",
                 "category": category,
                 "doc_type": doc_type,
                 "file_name": f"{art_id}.html",
