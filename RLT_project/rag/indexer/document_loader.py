@@ -1,196 +1,223 @@
 """
-Модуль: document_loader.py (ЗАГРУЗЧИК БАЗЫ ЗНАНИЙ И ЗАКОНОДАТЕЛЬСТВА)
+Модуль: document_loader.py (НОВЫЙ ЗАГРУЗЧИК БАЗЫ ЗНАНИЙ И ДОКУМЕНТОВ)
 
 Назначение:
-  Сборка единого реестра документов для индексации в векторную базу Qdrant.
-  Объединяет три ключевых источника:
-    1. Очищенные статьи Портала Поставщиков (dataset/kb_clean.json)
-    2. Нормативно-правовые акты РФ (dataset/1_legislation/*.txt)
-    3. Дополнительные прикладные инструкции по 44-ФЗ и 223-ФЗ (dataset/2_instructions/...)
-
-Какую проблему решает на Портале Поставщиков:
-  Пользователи (поставщики и заказчики) задают как практические вопросы по интерфейсу
-  ("где кнопка подачи оферты", "как привязать СТЕ к оферте"), так и юридические
-  ("в какие сроки направляется протокол разногласий по 44-ФЗ", "разрешена ли закупка
-  у ед. поставщика до 600 тыс. руб").
-  Загрузчик объединяет технический и нормативно-правовой корпуса в согласованную структуру.
+  Сборка единого реестра документов для индексации в векторную базу Qdrant
+  из нового чистого датасета (articles.json, PDF и DOCX).
 
 Контракт выходного объекта:
   {
-      "text": str,        # Полный текст документа (Markdown / Raw Text)
+      "text": str,        # Полный текст документа (чистый текст)
       "title": str,       # Название документа / статьи
-      "url": str,         # URL первоисточника или ссылка на консультант/регламент
-      "category": str,    # Категория (quotation_session, ste_catalog, 44fz, 223fz, ecp_mchd и др.)
-      "doc_type": str,    # "instruction" | "legislation" | "faq"
-      "file_name": str,   # Имя файла или уникальный ID
+      "url": str,         # URL первоисточника на портале
+      "category": str,    # Категория (serviceName или sectionType)
+      "doc_type": str,    # "instruction" | "legislation"
+      "file_name": str,   # Имя файла или ID статьи
       "doc_id": str       # Стабильный ID документа
   }
 """
 
 import json
 import os
-import sys
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 
-# Настройка UTF-8 вывода для Windows
-if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
+
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
+
+try:
+    import docx
+except ImportError:
+    docx = None
 
 
-def _clean_legislation_title(filename: str) -> str:
-    """
-    Превращает имя файла закона в красивый официальный заголовок.
-    Пример: 'Federalny_zakon_ot_18_07_2011_N_223_FZ_red_ot_08_08_2024.txt'
-            -> 'Федеральный закон № 223-ФЗ от 18.07.2011 (ред. 08.08.2024)'
-    """
-    fn = filename.lower()
-    if "223_fz" in fn or "223-fz" in fn or "223fz" in fn:
-        return "Федеральный закон № 223-ФЗ «О закупках товаров, работ, услуг отдельными видами юридических лиц»"
-    if "63_fz" in fn or "63-fz" in fn:
-        return "Федеральный закон № 63-ФЗ «Об электронной подписи»"
-    if "135_fz" in fn or "135-fz" in fn:
-        return "Федеральный закон № 135-ФЗ «О защите конкуренции»"
-    if "294_fz" in fn or "294-fz" in fn:
-        return "Федеральный закон № 294-ФЗ «О защите прав юридических лиц и ИП при осуществлении госконтроля»"
-    if "grazhdanskiy_kodex" in fn or "gk" in fn:
-        return "Гражданский кодекс Российской Федерации (Часть первая)"
-    return filename.replace(".txt", "").replace("_", " ")
+from .config import DATASET_DIR
+
+# По умолчанию ищем новую базу в папке dataset внутри проекта
+DEFAULT_KB_PATH = os.environ.get("KB_PATH", str(DATASET_DIR))
 
 
-def _determine_legislation_category(filename: str) -> str:
-    """Определяет категорию для закона."""
-    fn = filename.lower()
-    if "223" in fn:
-        return "223fz"
-    if "63" in fn:
-        return "ecp_mchd"
-    if "135" in fn:
-        return "legislation"
-    return "legislation"
-
-
-def load_all_documents(include_legislation: bool = True) -> List[Dict[str, Any]]:
-    """
-    Загружает полный массив документов базы знаний и законодательства.
-    
-    Аргументы:
-      include_legislation: флаг загрузки нормативно-правовых актов РФ из 1_legislation.
-    """
-    base_dir = Path(__file__).resolve().parent.parent.parent.parent
-    dataset_file = base_dir / "dataset" / "kb_clean.json"
-    legislation_dir = base_dir / "dataset" / "1_legislation"
-    instructions_dir = base_dir / "dataset" / "2_instructions" / "zakupki_mos_ru_kb_articles"
-
-    documents: List[Dict[str, Any]] = []
-
-    # 1. Загрузка очищенных статей Портала Поставщиков (kb_clean.json)
-    if dataset_file.exists():
-        try:
-            with open(dataset_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            for item in data:
-                doc = {
-                    "text": item.get("text", "").strip(),
-                    "title": item.get("title", "Без названия").strip(),
-                    "url": item.get("url", ""),
-                    "category": item.get("category", "kb_article"),
-                    "doc_type": item.get("doc_type", "instruction"),
-                    "file_name": item.get("file_name", ""),
-                    "doc_id": str(item.get("doc_id") or item.get("file_name", ""))
-                }
-                if len(doc["text"]) > 10:
-                    documents.append(doc)
-
-            print(f"[LOADER] Загружено {len(documents)} статей из {dataset_file.name}")
-        except Exception as e:
-            print(f"[LOADER] Ошибка при чтении {dataset_file}: {e}")
+def _clean_html(html_text: str) -> str:
+    """Очищает HTML-теги для подачи чистого текста в RAG."""
+    if not html_text:
+        return ""
+    if BeautifulSoup:
+        soup = BeautifulSoup(html_text, "html.parser")
+        text = soup.get_text(separator="\n")
     else:
-        print(f"[LOADER] ВНИМАНИЕ: Файл {dataset_file} не найден!")
+        # Fallback if BeautifulSoup is not installed
+        text = re.sub(r'<[^>]+>', '\n', html_text)
+    return re.sub(r'\n+', '\n', text).strip()
 
-    # 2. Загрузка законодательства РФ (1_legislation)
-    if include_legislation and legislation_dir.exists():
-        leg_count = 0
-        for leg_file in sorted(legislation_dir.glob("*.txt")):
-            try:
-                with open(leg_file, "r", encoding="utf-8", errors="ignore") as f:
-                    content = f.read().strip()
 
-                if len(content) > 100:
-                    clean_title = _clean_legislation_title(leg_file.name)
-                    cat = _determine_legislation_category(leg_file.name)
-                    documents.append({
-                        "text": content,
-                        "title": clean_title,
-                        "url": "https://zakupki.mos.ru/knowledgebase/regulations",
-                        "category": cat,
-                        "doc_type": "legislation",
-                        "file_name": leg_file.name,
-                        "doc_id": f"leg_{leg_file.stem}"
-                    })
-                    leg_count += 1
-            except Exception as e:
-                print(f"[LOADER] Ошибка чтения закона {leg_file.name}: {e}")
+def load_articles_json(kb_path: Path) -> List[Dict[str, Any]]:
+    """Загружает текстовые инструкции из articles.json"""
+    articles_file = kb_path / "data" / "articles.json"
+    documents = []
 
-        print(f"[LOADER] Загружено {leg_count} федеральных законов из 1_legislation/")
+    if not articles_file.exists():
+        print(f"[LOADER] ВНИМАНИЕ: Файл {articles_file} не найден!")
+        return documents
 
-    # 3. Загрузка прикладных статей по 44-ФЗ и 223-ФЗ (2_instructions/zakupki_mos_ru_kb_articles)
-    if instructions_dir.exists():
-        extra_count = 0
-        for inst_file in instructions_dir.glob("*.txt"):
-            fn = inst_file.name.lower()
-            # Берем практические руководства по 44-ФЗ и 223-ФЗ
-            if ("44fz" in fn or "44-fz" in fn or "223fz" in fn or "223-fz" in fn) and "video" not in fn:
-                try:
-                    with open(inst_file, "r", encoding="utf-8", errors="ignore") as f:
-                        text_body = f.read().strip()
+    try:
+        with open(articles_file, "r", encoding="utf-8") as f:
+            articles = json.load(f)
 
-                    if len(text_body) > 200:
-                        lines = text_body.splitlines()
-                        real_url = ""
-                        real_title = inst_file.stem.replace("_", " ")
-                        
-                        # Парсим заголовки файла
-                        for line in lines[:5]:
-                            if line.startswith("SOURCE URL:"):
-                                real_url = line.replace("SOURCE URL:", "").strip()
-                            elif line.startswith("TITLE:"):
-                                real_title = line.replace("TITLE:", "").strip()
-                                
-                        cat = "44fz" if ("44" in fn) else "223fz"
+        for art in articles:
+            raw_content = art.get("selfServicePortal") or art.get("detailText") or art.get("previewText") or ""
+            clean_text = _clean_html(raw_content)
 
-                        # Убираем эти системные строки из самого текста, чтобы не мусорить в индекс
-                        clean_lines = []
-                        for line in lines:
-                            if not (line.startswith("SOURCE URL:") or line.startswith("TITLE:") or line.startswith("TAGS:") or line.startswith("===")):
-                                clean_lines.append(line)
-                        clean_text_body = "\n".join(clean_lines).strip()
+            # Игнорируем статьи-пустышки (ссылки на скачивание PDF)
+            if ".pdf" in raw_content.lower() and len(clean_text) < 200:
+                continue
+            
+            if len(clean_text) < 50:
+                continue
 
-                        documents.append({
-                            "text": clean_text_body,
-                            "title": real_title,
-                            "url": real_url if (real_url and real_url.startswith("https://zakupki.mos.ru")) else "https://zakupki.mos.ru/knowledgebase/main",
-                            "category": cat,
-                            "doc_type": "instruction",
-                            "file_name": inst_file.name,
-                            "doc_id": f"inst_{inst_file.stem}"
-                        })
-                        extra_count += 1
-                except Exception:
-                    pass
+            art_id = str(art.get("staticId") or art.get("id") or "unknown")
+            title = art.get("largeName", "Без названия").strip()
+            category = art.get("serviceName", "kb_article").strip()
+            
+            # Определяем doc_type (нормативка или обычная инструкция)
+            doc_type = "instruction"
+            if "закон" in title.lower() or "регламент" in title.lower() or "фз" in title.lower():
+                doc_type = "legislation"
 
-        if extra_count > 0:
-            print(f"[LOADER] Дополнительно загружено {extra_count} руководств по 44-ФЗ/223-ФЗ из 2_instructions/")
+            documents.append({
+                "text": clean_text,
+                "title": title,
+                "url": f"https://zakupki.mos.ru/knowledgebase/article/details/ais/{art_id}",
+                "category": category,
+                "doc_type": doc_type,
+                "file_name": f"{art_id}.html",
+                "doc_id": f"art_{art_id}"
+            })
 
+        print(f"[LOADER] Загружено {len(documents)} текстовых статей из articles.json")
+    except Exception as e:
+        print(f"[LOADER] Ошибка при чтении {articles_file}: {e}")
+
+    return documents
+
+
+def load_pdfs(kb_path: Path) -> List[Dict[str, Any]]:
+    """Извлекает текст из официальных PDF-инструкций"""
+    docs_dir = kb_path / "docs"
+    documents = []
+
+    if not docs_dir.exists():
+        return documents
+
+    if not PyPDF2:
+        print("[LOADER] PyPDF2 не установлен. Пропуск загрузки PDF (выполните pip install PyPDF2).")
+        return documents
+
+    pdf_count = 0
+    for pdf_file in docs_dir.glob("*.pdf"):
+        try:
+            text_blocks = []
+            with open(pdf_file, "rb") as f:
+                reader = PyPDF2.PdfReader(f)
+                for page in reader.pages:
+                    extracted = page.extract_text()
+                    if extracted:
+                        text_blocks.append(extracted)
+            
+            full_text = "\n".join(text_blocks).strip()
+            if len(full_text) > 100:
+                title = pdf_file.stem.replace("_", " ")
+                doc_type = "legislation" if "регламент" in title.lower() or "фз" in title.lower() else "instruction"
+                
+                documents.append({
+                    "text": full_text,
+                    "title": title,
+                    "url": f"https://zakupki.mos.ru/knowledgebase/docs/{pdf_file.name}",
+                    "category": "official_docs",
+                    "doc_type": doc_type,
+                    "file_name": pdf_file.name,
+                    "doc_id": f"pdf_{pdf_file.stem}"
+                })
+                pdf_count += 1
+        except Exception as e:
+            print(f"[LOADER] Ошибка чтения PDF {pdf_file.name}: {e}")
+
+    if pdf_count > 0:
+        print(f"[LOADER] Успешно загружено {pdf_count} PDF-инструкций")
+
+    return documents
+
+
+def load_docx(kb_path: Path) -> List[Dict[str, Any]]:
+    """Извлекает текст из официальных DOCX-инструкций"""
+    docs_dir = kb_path / "docs"
+    documents = []
+
+    if not docs_dir.exists():
+        return documents
+
+    if not docx:
+        print("[LOADER] python-docx не установлен. Пропуск загрузки DOCX (выполните pip install python-docx).")
+        return documents
+
+    docx_count = 0
+    for docx_file in docs_dir.glob("*.docx"):
+        try:
+            doc = docx.Document(docx_file)
+            full_text = "\n".join([para.text for para in doc.paragraphs if para.text]).strip()
+            
+            if len(full_text) > 100:
+                title = docx_file.stem.replace("_", " ")
+                
+                documents.append({
+                    "text": full_text,
+                    "title": title,
+                    "url": f"https://zakupki.mos.ru/knowledgebase/docs/{docx_file.name}",
+                    "category": "official_docs",
+                    "doc_type": "instruction",
+                    "file_name": docx_file.name,
+                    "doc_id": f"docx_{docx_file.stem}"
+                })
+                docx_count += 1
+        except Exception as e:
+            print(f"[LOADER] Ошибка чтения DOCX {docx_file.name}: {e}")
+
+    if docx_count > 0:
+        print(f"[LOADER] Успешно загружено {docx_count} DOCX-инструкций")
+
+    return documents
+
+
+def load_all_documents(kb_path: str = DEFAULT_KB_PATH) -> List[Dict[str, Any]]:
+    """
+    Загружает полный массив документов из нового датасета (JSON + PDF + DOCX).
+    """
+    path_obj = Path(kb_path)
+    print(f"[LOADER] Начинаю загрузку базы знаний из: {path_obj}")
+    
+    documents = []
+    
+    # 1. Текстовые статьи
+    documents.extend(load_articles_json(path_obj))
+    
+    # 2. PDF инструкции
+    documents.extend(load_pdfs(path_obj))
+    
+    # 3. DOCX инструкции
+    documents.extend(load_docx(path_obj))
+    
     print(f"[LOADER] Итого подготовлено {len(documents)} документов для индексатора.")
     return documents
 
 
 if __name__ == "__main__":
     docs = load_all_documents()
-    print(f"Пример первого документа: {docs[0]['title']} (Категория: {docs[0]['category']})")
+    if docs:
+        print(f"\nПример первого документа: {docs[0]['title']} (Категория: {docs[0]['category']})")
