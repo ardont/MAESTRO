@@ -31,6 +31,15 @@ class LLMErrorEvent(LLMBaseEvent):
     event: Literal[LLM_ERROR_EVENT] = LLM_ERROR_EVENT
     data: str
 
+LLM_BLOCK_EVENT = 'block'
+class LLMBlockEvent(LLMBaseEvent):
+    event: Literal[LLM_BLOCK_EVENT] = LLM_BLOCK_EVENT
+    data: str
+
+LLM_OFF_TOPIC_EVENT = 'off-topic' # сообщение не по теме
+class LLMOffTopicEvent(LLMBaseEvent):
+    event: Literal[LLM_OFF_TOPIC_EVENT] = LLM_OFF_TOPIC_EVENT
+    data: str
 
 async def stream_local_llm_response(prompt: str, model_name: str = "gpt-oss:20b") -> AsyncGenerator[LLMBaseEvent]:
     """

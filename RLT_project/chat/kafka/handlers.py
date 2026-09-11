@@ -9,6 +9,7 @@ from rag.stream import (
     LLM_TOKEN_EVENT,
     LLM_DONE_EVENT,
     LLM_ERROR_EVENT, REDIRECTED_TO_OPERATOR,
+    LLM_BLOCK_EVENT, LLM_OFF_TOPIC_EVENT,
 )
 from ..constants import (
     EVENT_NEW_TOKEN,
@@ -46,6 +47,43 @@ async def publish_error_msg(broker: KafkaBroker, topic: str, new_message: NewMes
                 all_text=error,
             ),
             meta={"error": True},
+        ),
+        headers={'event_name': EVENT_END_GENERATION},
+        topic=topic,
+        key=new_message.data.chat_id,
+    )
+
+async def publish_msg(
+        broker: KafkaBroker,
+        topic: str,
+        new_message: NewMessageEvent,
+        message_for_user: str,
+        need_to_block_chat: bool = False,
+        off_topic_message: bool = False,
+) -> None:
+    await broker.publish(
+        NewTokenEvent(
+            data=NewTokenData(
+                user_uuid=new_message.data.user_uuid,
+                chat_id=new_message.data.chat_id,
+                token=message_for_user,
+                id=0,
+            )
+        ),
+        headers={'event_name': EVENT_NEW_TOKEN},
+        topic=LLM_RESPONSE_TOPIC,
+        key=new_message.data.chat_id,
+    )
+    await broker.publish(
+        EndGenerationEvent(
+            data=EndGenerationData(
+                user_uuid=new_message.data.user_uuid,
+                chat_id=new_message.data.chat_id,
+                details="Message received",
+                all_text=message_for_user,
+            ),
+            meta={"need_to_block_chat": need_to_block_chat,
+                  "off_topic_message": off_topic_message},
         ),
         headers={'event_name': EVENT_END_GENERATION},
         topic=topic,
@@ -127,6 +165,29 @@ async def new_message_handler(
                 topic=LLM_RESPONSE_TOPIC,
                 new_message=new_message,
                 error="Извините, при обработке вашего запролса произошла ошибка, попробуйте еще раз позднее",
+            )
+        elif llm_event.event == LLM_BLOCK_EVENT:
+            await publish_msg(
+                broker=broker,
+                topic=LLM_RESPONSE_TOPIC,
+                new_message=new_message,
+                message_for_user="Вы нарушили правила площадки (использование ненармативной лексики)."
+                                 " Впреть соблюдайте прваила."
+                                 " Данный чат будет заблокирован."
+                                 "Вы можете переформулировать свою проблему и обратится с ней в другом чате.",
+                need_to_block_chat=True,
+                off_topic_message=False,
+            )
+        elif llm_event.event == LLM_OFF_TOPIC_EVENT:
+            await publish_msg(
+                broker=broker,
+                topic=LLM_RESPONSE_TOPIC,
+                new_message=new_message, # Здравствуйте! Спасибо за обращение.
+                message_for_user="Наша платформа работает только с темами по платформе https://zakupki.mos.ru/. "
+                                 "Ваш вопрос относится к другой сфере, поэтому мы не сможем вам помочь. "
+                                 "Вы можете переформулировать свою проблему и обратится снова.",
+                need_to_block_chat=False,
+                off_topic_message=True,
             )
         else:
             raise RuntimeError(llm_event.event)

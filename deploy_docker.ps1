@@ -4,6 +4,8 @@ $RemoteUser = "rama"
 $RemoteIP = "100.100.89.45"
 $RemoteDir = "/home/rama/rlt_project"
 
+
+
 Write-Host "1. Uploading Docker files and project files..." -ForegroundColor Yellow
 scp -o StrictHostKeyChecking=no Dockerfile docker-compose.yml requirements.txt "${RemoteUser}@${RemoteIP}:${RemoteDir}/"
 scp -r -o StrictHostKeyChecking=no RLT_project scripts "${RemoteUser}@${RemoteIP}:${RemoteDir}/"
