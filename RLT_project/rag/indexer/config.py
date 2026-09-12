@@ -41,12 +41,11 @@ PDF_CACHE_DIR = BASE_DIR / "pdf_cache"
 MEDIA_DIR = BASE_DIR / "media" / "kb_images"
 
 # Локальное файловое хранилище Qdrant.
-# Используется как запасной вариант, если Qdrant-сервер (localhost:6333) недоступен.
-QDRANT_STORAGE_DIR = BASE_DIR / "qdrant_storage"
+# Только для явно выбранного QDRANT_MODE=local; не папка серверного контейнера.
+QDRANT_STORAGE_DIR = Path(os.environ.get("QDRANT_STORAGE_DIR", str(BASE_DIR / "qdrant_local_storage")))
 
 # Создаём папки автоматически, если они ещё не существуют
 os.makedirs(MEDIA_DIR, exist_ok=True)
-os.makedirs(QDRANT_STORAGE_DIR, exist_ok=True)
 
 # ─────────────────────────────────────────────
 # НАСТРОЙКИ МОДЕЛИ ЭМБЕДДИНГОВ
@@ -85,10 +84,10 @@ CHUNK_OVERLAP = 120  # Перекрытие между чанками (симв�
 
 # Имя коллекции в Qdrant (аналог «таблицы» в реляционной БД).
 # В этой коллекции хранятся все векторизованные чанки документов.
-COLLECTION_NAME = "data_files"
+COLLECTION_NAME = os.environ.get("QDRANT_COLLECTION", "data_files")
 
 # Адрес локального Qdrant-сервера (запускается отдельно через Docker или бинарник).
-# Если сервер недоступен — система автоматически использует QDRANT_STORAGE_DIR.
+# Если сервер недоступен, ошибка сообщается вызывающему коду; смены базы нет.
 QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.environ.get("QDRANT_PORT", 6333))
 

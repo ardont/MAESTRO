@@ -4,13 +4,13 @@ from logging import getLogger
 from faststream.kafka import KafkaBroker
 
 from .events import NewMessageEvent, NewTokenEvent, NewTokenData, EndGenerationEvent, EndGenerationData
-from rag.stream import (
-    stream_local_llm_response,
+from rag.events import (
     LLM_TOKEN_EVENT,
     LLM_DONE_EVENT,
     LLM_ERROR_EVENT, REDIRECTED_TO_OPERATOR,
     LLM_BLOCK_EVENT, LLM_OFF_TOPIC_EVENT,
 )
+from rag.main_rag import rag_pipeline
 from ..constants import (
     EVENT_NEW_TOKEN,
     EVENT_END_GENERATION
@@ -35,7 +35,7 @@ async def publish_error_msg(broker: KafkaBroker, topic: str, new_message: NewMes
             )
         ),
         headers={'event_name': EVENT_NEW_TOKEN},
-        topic=LLM_RESPONSE_TOPIC,
+        topic=topic,
         key=new_message.data.chat_id,
     )
     await broker.publish(
@@ -71,7 +71,7 @@ async def publish_msg(
             )
         ),
         headers={'event_name': EVENT_NEW_TOKEN},
-        topic=LLM_RESPONSE_TOPIC,
+        topic=topic,
         key=new_message.data.chat_id,
     )
     await broker.publish(
@@ -97,7 +97,8 @@ async def new_message_handler(
     full_msg = ''
     token_id = 0
     logger.info(f"New message: {prompt}; chat_id: {new_message.data.chat_id}")
-    async for llm_event in stream_local_llm_response(prompt):
+
+    async for llm_event in rag_pipeline(prompt):
         if llm_event.event == LLM_TOKEN_EVENT:
             logger.info(
                 "Kafka publish: key=%r (%s), headers=%r, event=%r (%s)",
@@ -147,47 +148,46 @@ async def new_message_handler(
 
             else:
                 await broker.publish(
-                EndGenerationEvent(
-                    data=EndGenerationData(
-                        user_uuid=new_message.data.user_uuid,
-                        chat_id=new_message.data.chat_id,
-                        details="Done",
-                        all_text=full_msg,
-                    )
-                ),
-                headers={'event_name': EVENT_END_GENERATION},
-                topic=LLM_RESPONSE_TOPIC,
-                key=new_message.data.chat_id,
-            )
+                    EndGenerationEvent(
+                        data=EndGenerationData(
+                            user_uuid=new_message.data.user_uuid,
+                            chat_id=new_message.data.chat_id,
+                            details="Done",
+                            all_text=full_msg,
+                        )
+                    ),
+                    headers={'event_name': EVENT_END_GENERATION},
+                    topic=LLM_RESPONSE_TOPIC,
+                    key=new_message.data.chat_id,
+                )
+            return
         elif llm_event.event == LLM_ERROR_EVENT:
             await publish_error_msg(
                 broker=broker,
                 topic=LLM_RESPONSE_TOPIC,
                 new_message=new_message,
-                error="Извините, при обработке вашего запролса произошла ошибка, попробуйте еще раз позднее",
+                error="Извините, при обработке вашего запроса произошла ошибка, попробуйте еще раз позднее",
             )
+            return
         elif llm_event.event == LLM_BLOCK_EVENT:
             await publish_msg(
                 broker=broker,
                 topic=LLM_RESPONSE_TOPIC,
                 new_message=new_message,
-                message_for_user="Вы нарушили правила площадки (использование ненармативной лексики)."
-                                 " Впреть соблюдайте прваила."
-                                 " Данный чат будет заблокирован."
-                                 "Вы можете переформулировать свою проблему и обратится с ней в другом чате.",
+                message_for_user=llm_event.data,
                 need_to_block_chat=True,
                 off_topic_message=False,
             )
+            return
         elif llm_event.event == LLM_OFF_TOPIC_EVENT:
             await publish_msg(
                 broker=broker,
                 topic=LLM_RESPONSE_TOPIC,
-                new_message=new_message, # Здравствуйте! Спасибо за обращение.
-                message_for_user="Наша платформа работает только с темами по платформе https://zakupki.mos.ru/. "
-                                 "Ваш вопрос относится к другой сфере, поэтому мы не сможем вам помочь. "
-                                 "Вы можете переформулировать свою проблему и обратится снова.",
+                new_message=new_message,
+                message_for_user=llm_event.data,
                 need_to_block_chat=False,
                 off_topic_message=True,
             )
+            return
         else:
             raise RuntimeError(llm_event.event)

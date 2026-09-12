@@ -137,7 +137,7 @@ def run_indexing_pipeline(sample_limit: int = None):
     # 4. Инициализация Qdrant и загрузка
     print(f"\n[ШАГ 4/5] Подключение к Qdrant и сохранение коллекции '{COLLECTION_NAME}'...")
     client = get_qdrant_client()
-    init_collection(client, recreate=True)
+    init_collection(client)
 
     upsert_chunks_batch(client, all_chunks, all_embeddings, sparse_embeddings, batch_size=100)
     print(f"[OK] Успешно сохранено {len(all_chunks)} точек в векторной коллекции Qdrant!")

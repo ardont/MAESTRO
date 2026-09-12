@@ -8,7 +8,7 @@ from django.db import transaction
 
 from chat.models import User, Message, Chat
 from chat.serializers import MessageSerializer
-from .main_rag import rag_pipeline
+from .main_rag import rag_pipeline_result
 from .router import check_guardrails, route_support_line
 from .graph_rag import get_workflow_step_response
 
@@ -214,7 +214,7 @@ def api_ask(request):
     line_info = route_support_line(question)
 
     try:
-        rag_res = rag_pipeline(
+        rag_res = rag_pipeline_result(
             question,
             chat=chat,
             category_filter=line_info.get("category_filter")

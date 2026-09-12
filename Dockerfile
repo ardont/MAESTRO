@@ -1,18 +1,14 @@
-FROM dockerhub.timeweb.cloud/library/python:3.14-slim
-
+FROM python:3.12-slim
 WORKDIR /app
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Ставим PyTorch базовый (CPU версия, отлично работает на Mac)
-RUN pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-
-# Ставим остальные зависимости проекта
 COPY requirements.txt .
-RUN pip3 install -r requirements.txt
 
-# Копируем код
-COPY . .А
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --no-cache-dir \
+        -r requirements.txt
+
+COPY . .

@@ -1,0 +1,56 @@
+services:
+  qdrant:
+    image: dockerhub.timeweb.cloud/qdrant/qdrant:latest
+    container_name: rlt_qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_BIND_ADDRESS:-127.0.0.1}:6333:6333"
+    volumes:
+      - ${QDRANT_DATA_DIR:-./qdrant_storage}:/qdrant/storage
+
+  redis:
+    image: redis:alpine
+    container_name: rlt_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: rlt_django
+    command: bash -c "cd RLT_project && python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - ${HOME}/.cache:/root/.cache
+
+    ports:
+      - "8001:8000"
+
+    depends_on:
+      - qdrant
+      - redis
+
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_MODE=server
+      - AUTO_INDEX_ON_START=false
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - KAFKA_URL=kafka:29092
+      - LLM_REQUEST_TOPIC=llm-requests
+      - LLM_RESPONSE_TOPIC=llm-responses
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    networks:
+      - default
