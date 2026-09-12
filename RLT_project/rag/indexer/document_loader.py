@@ -45,6 +45,17 @@ except ImportError:
 
 from .config import DATASET_DIR
 
+try:
+    from ..url_utils import normalize_portal_url
+except Exception:
+    try:
+        from RLT_project.rag.url_utils import normalize_portal_url
+    except Exception:
+        try:
+            from rag.url_utils import normalize_portal_url
+        except Exception:
+            def normalize_portal_url(u): return u
+
 # По умолчанию ищем новую базу в папке dataset внутри проекта
 DEFAULT_KB_PATH = os.environ.get("KB_PATH", str(DATASET_DIR))
 
@@ -96,7 +107,7 @@ def load_articles_json(kb_path: Path) -> List[Dict[str, Any]]:
                 doc_type = "legislation"
 
             # Используем точный сохраненный канонический URL из датасета
-            art_url = art.get("url") or f"https://zakupki.mos.ru/knowledgebase/article/details/ais/{art_id}"
+            art_url = normalize_portal_url(art.get("url") or f"https://zakupki.mos.ru/knowledgebase/article/details/ais/{art_id}")
 
             documents.append({
                 "text": clean_text,
@@ -130,7 +141,7 @@ def get_canonical_doc_url(filename: str) -> str:
         return KNOWN_DOC_URLS[fn_lower]
     # На портале zakupki.mos.ru/cms/Media/docs/ документы размещаются с пробелами
     clean_name = filename.replace("_", " ")
-    return f"https://zakupki.mos.ru/cms/Media/docs/{urllib.parse.quote(clean_name)}"
+    return normalize_portal_url(f"https://zakupki.mos.ru/cms/Media/docs/{urllib.parse.quote(clean_name)}")
 
 
 def load_pdf(kb_path: Path) -> List[Dict[str, Any]]:
@@ -264,7 +275,7 @@ def load_regulations_json(kb_path: Path) -> List[Dict[str, Any]]:
                 continue
 
             title = page.get("displayText", "Регламент ведения портала").strip()
-            url = page.get("url") or f"https://zakupki.mos.ru/knowledgebase/article/details/cms/{cid}"
+            url = normalize_portal_url(page.get("url") or f"https://zakupki.mos.ru/knowledgebase/article/details/cms/{cid}")
 
             documents.append({
                 "text": clean_text,

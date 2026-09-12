@@ -19,7 +19,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     "fas_complaint_44fz": {
         "id": "fas_complaint_44fz",
         "title": "Подача жалобы в Федеральную антимонопольную службу (ФАС России) по 44-ФЗ",
-        "url": "https://zakupki.mos.ru/knowledgebase/regulations",
+        "url": "https://zakupki.mos.ru/knowledgebase/article/regulation/cms",
         "keywords": [
             "фас", "жалоба", "жалобу", "обжалование", "отклонение заявки", "необоснованно отклонили",
             "ст 105", "статья 105", "статья 106", "105 фз", "нарушение заказчика", "подать в фас"

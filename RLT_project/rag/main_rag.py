@@ -289,7 +289,7 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
                 f"**Пошаговый порядок действий:**\n{steps_formatted}"
             )
         elif hits:
-            main_source = citations[0] if citations else {"title": "Регламент Портала поставщиков", "url": "https://zakupki.mos.ru"}
+            main_source = citations[0] if citations else {"title": "База знаний Портала поставщиков Москвы", "url": "https://zakupki.mos.ru/knowledgebase/main"}
             extracted = hits[0].payload.get("text", "").strip()
             lines = [l.strip() for l in extracted.splitlines() if l.strip()]
             body_text = "\n\n".join(lines[:6])
