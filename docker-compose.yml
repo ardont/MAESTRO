@@ -50,3 +50,9 @@ services:
 
     networks:
       - default
+      - rlt_hack_network
+
+networks:
+  default:
+  rlt_hack_network:
+    external: true
