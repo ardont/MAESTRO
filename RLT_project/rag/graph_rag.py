@@ -21,7 +21,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
         "title": "Подача жалобы в Федеральную антимонопольную службу (ФАС России) по 44-ФЗ",
         "url": "https://zakupki.mos.ru/knowledgebase/article/regulation/cms",
         "keywords": [
-            "фас", "жалоба", "жалобу", "обжалование", "отклонение заявки", "необоснованно отклонили",
+            "фас", "жалоба", "жалобу", "жалобы", "обжалование", "обжаловать", "отклонение заявки", "необоснованно отклонили",
             "ст 105", "статья 105", "статья 106", "105 фз", "нарушение заказчика", "подать в фас"
         ],
         "law_references": [
@@ -50,7 +50,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
         "title": "Регистрация поставщика в ЕРУЗ / ЕИС по 44-ФЗ",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/506041",
         "keywords": [
-            "регистрация", "еруз", "аккредитация", "еис", "госуслуги", "начать торги", "авторизация", "профиль"
+            "регистрация", "зарегистрироваться", "еруз", "аккредитация", "еис", "госуслуги", "начать торги", "авторизация", "профиль"
         ],
         "law_references": [
             "Федеральный закон № 44-ФЗ, Статья 24.2 (Аккредитация участников закупок в ЕИС и на ЭТП)"
@@ -75,7 +75,9 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
         "title": "Участие в котировочных сессиях на Портале Поставщиков Москвы",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/508580",
         "keywords": [
-            "котировочная сессия", "котировочные сессии", "оферта", "снижение цены", "победитель сессии", "шаг снижения"
+            "котировочная сессия", "котировочные сессии", "котировочной сессии", "котировочных сессиях",
+            "котировочн", "оферта", "оферту", "ценовое предложение", "ценового предложения", "подать предложение",
+            "снижение цены", "победитель сессии", "шаг снижения"
         ],
         "law_references": [
             "Регламент ведения Портала поставщиков города Москвы",
@@ -101,7 +103,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
         "title": "Электронное актирование и подписание УПД при исполнении контракта",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/305516",
         "keywords": [
-            "электронное актирование", "упд", "приемка", "акт приемки", "исполнение контракта", "документ о приемке"
+            "электронное актирование", "упд", "приемка", "приемке", "акт приемки", "исполнение контракта", "документ о приемке"
         ],
         "law_references": [
             "Федеральный закон № 44-ФЗ, ч. 13 ст. 94 (Обязательное электронное актирование)"
@@ -126,7 +128,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
         "title": "Настройка электронной подписи (КЭП / ЭЦП) и КриптоПро CSP",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/506376",
         "keywords": [
-            "криптопро", "cryptopro", "эцп", "кэп", "сертификат", "плагин", "рутокен", "jacarta", "токен", "браузер"
+            "криптопро", "cryptopro", "эцп", "кэп", "укэп", "сертификат", "плагин", "рутокен", "jacarta", "токен", "браузер"
         ],
         "law_references": [
             "Федеральный закон № 63-ФЗ «Об электронной подписи»"
@@ -159,14 +161,34 @@ def find_graph_node(query: str) -> Optional[Dict[str, Any]]:
 
     for node_id, node in PROCUREMENT_KNOWLEDGE_GRAPH.items():
         score = 0
-        for kw in node["keywords"]:
+        for kw in node.get("keywords", []):
             if kw in q:
                 # Точные совпадения важных юридических терминов весят больше
                 score += 3 if len(kw.split()) > 1 else 1
         
         # Специальный приоритет для жалобы в ФАС
-        if "фас" in q and "жалоб" in q and node_id == "fas_complaint_44fz":
+        if "фас" in q and ("жалоб" in q or "обжалова" in q) and node_id == "fas_complaint_44fz":
             score += 10
+        elif "фас" in q and node_id == "fas_complaint_44fz":
+            score += 3
+
+        # Приоритет для котировочных сессий
+        if "котировочн" in q and node_id == "quotation_session":
+            score += 5
+        if "ценов" in q and "предложен" in q and node_id == "quotation_session":
+            score += 4
+
+        # Приоритет для ЭЦП и КриптоПро
+        if ("криптопро" in q or "cryptopro" in q) and node_id == "ecp_cryptopro":
+            score += 5
+
+        # Приоритет для ЕРУЗ / регистрации
+        if ("еруз" in q or "аккредитац" in q) and node_id == "registration_44fz":
+            score += 5
+
+        # Приоритет для УПД / электронного актирования
+        if ("упд" in q or "актирован" in q) and node_id == "contract_execution_upd":
+            score += 5
 
         if score > best_score and score >= 2:
             best_score = score

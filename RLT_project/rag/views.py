@@ -111,6 +111,39 @@ def api_ask(request):
             }
         }, status=200)
 
+    # 3. ПРОВЕРКА ПОШАГОВОГО WORKFLOW (МГНОВЕННЫЙ ОТВЕТ БЕЗ LLM)
+    from .workflow import handle_workflow
+    workflow_res = handle_workflow(question, chat)
+    if workflow_res is not None:
+        answer_text = workflow_res.get("answer", "")
+        citations = workflow_res.get("citations", [])
+        wf_line_info = workflow_res.get("line_info") or {
+            "line": "L1",
+            "name": "Пошаговый интерактивный консультант",
+            "badge_color": "#0284c7"
+        }
+        with transaction.atomic():
+            bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
+            out_msg = Message.objects.create(
+                chat=chat,
+                author=bot,
+                text=answer_text,
+                is_read=True
+            )
+        return JsonResponse({
+            "answer": answer_text,
+            "citations": citations,
+            "images": [],
+            "line_info": wf_line_info,
+            "timings": {"search_sec": 0, "llm_sec": 0, "total_sec": 0.001},
+            "ids": {
+                "user": str(user.id),
+                "chat": str(chat.id),
+                "question_message": str(in_msg.id),
+                "answer_message": str(out_msg.id),
+            }
+        }, status=200)
+
     # 4. СТАНДАРТНЫЙ RAG ЗАПРОС
     line_info = route_support_line(question)
 
@@ -137,7 +170,7 @@ def api_ask(request):
             "answer": answer_text,
             "citations": citations,
             "images": images,
-            "line_info": line_info,
+            "line_info": rag_res.get("line_info") or line_info,
             "timings": rag_res.get("timings", {}),
             "ids": {
                 "user": str(user.id),
