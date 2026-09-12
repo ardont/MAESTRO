@@ -28,7 +28,7 @@ async def llm_request_handler(msg: KafkaMessage):
 
         await new_message_handler(msg_event)
 
-        print("HANDLER FINISHED")
+        logger.info("HANDLER FINISHED chat_id=%s", msg_event.data.chat_id)
 
     except Exception:
         logger.exception("Error processing Kafka message")

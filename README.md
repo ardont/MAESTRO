@@ -64,35 +64,24 @@ flowchart TD
 
 ---
 
-## 🚀 Быстрый старт (One-Click Deploy)
+## 🚀 Запуск Kafka RAG-сервиса
 
-### Требования к серверу:
-- **ОС:** Linux (Ubuntu 22.04 LTS) / Windows с WSL2
-- **GPU:** NVIDIA GPU с поддержкой CUDA (от 8 ГБ VRAM, например RTX 3050 / RTX 3060 / T4)
-- **Docker & Docker Compose:** с установленным `nvidia-container-toolkit`
-- **Ollama:** локально или сетевой инстанс (по умолчанию `http://host.docker.internal:11434`)
-
-### Развертывание в 3 команды:
+Нужны Docker с Compose >= 2.20 и отдельная Ollama с установленной моделью.
+Поддерживаются Linux и Docker Desktop на macOS/Windows. RAG-образ использует
+Python 3.12 и CPU PyTorch; NVIDIA runtime для него не требуется.
 
 ```bash
-# 1. Клонируйте репозиторий
-git clone https://github.com/ardont/MAESTRO.git rlt_project
-cd rlt_project
-
-# 2. Запустите стек контейнеров
-docker compose up -d
-
-# 3. Следите за процессом автоинициализации в логах
-docker compose logs -f web
+docker compose up -d --build
+docker compose logs -f rag
 ```
 
-### Что происходит под капотом при стартe (`entrypoint.sh` -> `auto_init.py`):
-1. **Проверка Qdrant:** Healthcheck по эндпоинту `/readyz`.
-2. **Проверка Ollama:** Проверка наличия модели `qwen2.5:7b` и автоматический `pull`, если модель отсутствует.
-3. **Миграции Django:** Автоматическое применение схемы базы данных SQLite/PostgreSQL.
-4. **Auto-indexing:** Проверка коллекции векторов в Qdrant. Если база пуста — запускается фоновый парсинг 516 статей базы знаний из `dataset/`, чанкинг, построение графа и индексация 6 500+ точек.
-5. **Warmup (Прогрев):** Прогонка тестового эмбеддинга через CUDA-модель для исключения задержек на первом клиентском запросе.
-6. **Запуск веб-сервера:** Django запускается на порту `8001` (внешний) / `8000` (внутренний).
+Compose запускает Kafka, Redis, Qdrant и самостоятельный FastStream worker.
+Django и автоматическая переиндексация при старте не запускаются.
+Темы Kafka задаются в `.env`; они должны совпадать с основным приложением.
+Данные Qdrant и кэш моделей сохраняются в именованных томах.
+
+Настройка Ollama, локальной модели, внешнего Kafka и диагностика сборки:
+[инструкция запуска](docs/docker_run.md).
 
 ---
 

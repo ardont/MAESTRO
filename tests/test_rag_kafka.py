@@ -16,6 +16,31 @@ from rag import main_rag
 from rag.events import LLMTokenEvent, LLMDoneEvent, LLMBlockEvent, LLMOffTopicEvent
 
 
+class OllamaModelTests(unittest.TestCase):
+    def test_requests_use_configured_model_without_autodiscovery(self):
+        for configured, expected in [(None, 'gpt-oss:20b'), ('gpt-oss:20b', 'gpt-oss:20b'),
+                                     ('custom:latest', 'custom:latest')]:
+            env = {} if configured is None else {'OLLAMA_MODEL': configured}
+            with self.subTest(configured=configured), patch.dict(os.environ, env, clear=True), patch.object(
+                main_rag.requests, 'get'
+            ) as get, patch.object(main_rag.requests, 'post') as post:
+                post.return_value.status_code = 200
+                post.return_value.json.return_value = {'response': 'ON_TOPIC'}
+                self.assertEqual(main_rag._call_local_gpt('test prompt'), 'ON_TOPIC')
+                self.assertEqual(post.call_args.kwargs['json']['model'], expected)
+                get.assert_not_called()
+
+    def test_missing_model_logs_error_without_switching_model(self):
+        with patch.dict(os.environ, {'OLLAMA_MODEL': 'gpt-oss:20b'}), patch.object(
+            main_rag.requests, 'post'
+        ) as post, self.assertLogs('rag', level='WARNING') as logs:
+            post.return_value.status_code = 404
+            post.return_value.text = 'model not found'
+            self.assertEqual(main_rag._call_local_gpt('test prompt'), '')
+        self.assertEqual(post.call_count, 1)
+        self.assertIn('model=gpt-oss:20b status=404', '\n'.join(logs.output))
+
+
 class PipelineTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.search = Mock(return_value=[])
@@ -43,10 +68,20 @@ class PipelineTests(unittest.IsolatedAsyncioTestCase):
         self.search.assert_not_called()
 
     async def test_off_topic_is_terminal_before_search(self):
-        with patch.object(main_rag, '_call_local_gpt', return_value='OFF_TOPIC'):
+        with patch.object(main_rag, '_call_local_gpt', return_value='OFF_TOPIC'), self.assertLogs('rag', level='INFO') as logs:
             events = await self.collect('Как приготовить борщ?')
         self.assertEqual([e.event for e in events], ['off-topic'])
         self.search.assert_not_called()
+        self.assertTrue(any('[RAG START]' in line for line in logs.output))
+        self.assertTrue(any("verdict='OFF_TOPIC'" in line for line in logs.output))
+        self.assertTrue(any('event=off-topic' in line for line in logs.output))
+
+    async def test_invalid_classifier_response_continues_search(self):
+        for verdict in ['', 'Ответ: OFF_TOPIC']:
+            with self.subTest(verdict=verdict), patch.object(main_rag, '_call_local_gpt', return_value=verdict):
+                events = await self.collect('Как зарегистрироваться?')
+            self.assertEqual([e.event for e in events], ['token', 'done'])
+        self.assertEqual(self.search.call_count, 2)
 
     async def test_missing_context_is_not_off_topic(self):
         with patch.object(main_rag, '_call_local_gpt', return_value='ON_TOPIC'):
@@ -169,3 +204,18 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
             await self.handlers.new_message_handler(self.message)
         self.assertEqual(publish.call_count, 2)
         self.assertTrue(publish.call_args.args[0].meta['off_topic_message'])
+
+    async def test_real_profanity_pipeline_to_handler(self):
+        message = self.message.model_copy(update={
+            'data': self.message.data.model_copy(update={'text': 'хуй'}),
+        })
+        publish = AsyncMock()
+        with patch.object(main_rag, '_call_local_gpt') as llm, patch.object(
+            self.handlers.broker, 'publish', publish
+        ):
+            await self.handlers.new_message_handler(message)
+        llm.assert_not_called()
+        self.assertEqual(publish.call_count, 2)
+        self.assertEqual(publish.call_args.args[0].meta, {
+            'need_to_block_chat': True, 'off_topic_message': False,
+        })

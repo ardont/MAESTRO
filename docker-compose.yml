@@ -1,7 +1,6 @@
 services:
   qdrant:
-    image: dockerhub.timeweb.cloud/qdrant/qdrant:latest
-    container_name: rlt_qdrant
+    image: qdrant/qdrant:v1.19.0
     restart: unless-stopped
     ports:
       - "${QDRANT_BIND_ADDRESS:-127.0.0.1}:6333:6333"
@@ -9,54 +8,67 @@ services:
       - qdrant_data:/qdrant/storage
 
   redis:
-    image: redis:7-alpine
-    container_name: rlt_redis
+    image: redis:7.4-alpine
     restart: unless-stopped
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
-  web:
+# kafka
+
+  rag:
     build:
       context: .
-    container_name: rlt_django
-
-    command: >
-      bash -c "
-        python RLT_project/manage.py migrate &&
-        python RLT_project/manage.py runserver 0.0.0.0:8000
-      "
-
+      args:
+        PIP_INDEX_URL: ${BUILD_PIP_INDEX_URL:-https://pypi.org/simple}
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
     volumes:
-      - .:/app
       - python_cache:/root/.cache
-
-    ports:
-      - "8001:8000"
-
+      - type: bind
+        source: ${EMBEDDING_MODEL_HOST_PATH:-/Users/todaisy/models/ru-en-RoSBERTa}
+        target: /models/ru-en-RoSBERTa
+        read_only: true
+        bind:
+          create_host_path: false
     depends_on:
-      - qdrant
-      - redis
-
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
-
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
       QDRANT_MODE: server
-
       AUTO_INDEX_ON_START: "false"
-
-      OLLAMA_HOST: http://host.docker.internal:11434
-
+      EMBEDDING_MODEL_NAME: /models/ru-en-RoSBERTa
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gpt-oss:20b}
+      # KAFKA_URL on the host may be localhost:9092; that cannot be used here.
+      #KAFKA_URL: ${RAG_KAFKA_URL:-kafka:29092}
       KAFKA_URL: kafka:29092
-      LLM_REQUEST_TOPIC: llm-requests
-      LLM_RESPONSE_TOPIC: llm-responses
-
+      LLM_REQUEST_TOPIC: ${LLM_REQUEST_TOPIC:-llm-requests}
+      LLM_RESPONSE_TOPIC: ${LLM_RESPONSE_TOPIC:-llm-responses}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - shared
 
 volumes:
   qdrant_data:
   redis_data:
   python_cache:
+
+networks:
+  shared:
+    external: true
+    name: rlt_hack_network

@@ -99,6 +99,7 @@ async def new_message_handler(
     logger.info(f"New message: {prompt}; chat_id: {new_message.data.chat_id}")
 
     async for llm_event in rag_pipeline(prompt):
+        logger.info("RAG EVENT chat_id=%s event=%s", new_message.data.chat_id, llm_event.event)
         if llm_event.event == LLM_TOKEN_EVENT:
             logger.info(
                 "Kafka publish: key=%r (%s), headers=%r, event=%r (%s)",

@@ -15,6 +15,8 @@ import torch                    # PyTorch — фреймворк для нейр
 from transformers import AutoTokenizer, AutoModel  # HuggingFace: загрузка BERT-модели
 import numpy as np              # NumPy — для работы с числовыми массивами
 import warnings
+import logging
+from pathlib import Path
 from .config import EMBEDDING_MODEL_NAME  # Имя модели из config.py
 
 # Подавляем предупреждение HuggingFace о неинициализированных весах
@@ -27,7 +29,7 @@ class RoSBERTaEmbedder:
 
     При создании:
       - Автоматически определяет лучшее устройство (GPU/CPU)
-      - Загружает токенизатор и модель с HuggingFace
+      - Загружает токенизатор и модель из настроенного каталога или HuggingFace
       - Переводит модель в режим вывода (eval) — без обучения
 
     Методы:
@@ -36,11 +38,18 @@ class RoSBERTaEmbedder:
     """
 
     def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
-        import os
-        local_model_path = "/models/ru-en-RoSBERTa"
-        if os.path.exists(local_model_path):
-            print(f"[EMBEDDER] Найдена локальная модель: {local_model_path}")
-            model_name = local_model_path
+        model_path = Path(model_name).expanduser()
+        local_only = model_path.is_dir() or model_path.is_absolute() or model_name.startswith('.')
+        if local_only:
+            if not model_path.is_dir():
+                raise FileNotFoundError(
+                    f"Локальная модель эмбеддингов не найдена: {model_path}. "
+                    "Проверьте EMBEDDING_MODEL_NAME и bind mount EMBEDDING_MODEL_HOST_PATH."
+                )
+            model_name = str(model_path.resolve())
+        logging.getLogger('rag').info(
+            '[EMBEDDER LOAD] source=%s local_files_only=%s', model_name, local_only,
+        )
         # Определяем, на каком устройстве считать:
         # CUDA (GPU NVIDIA) > MPS (GPU Apple M1/M2/M3) > CPU
         if torch.cuda.is_available():
@@ -52,9 +61,9 @@ class RoSBERTaEmbedder:
         print(f"[EMBEDDER] Initializing '{model_name}' on device: {self.device}")
 
         # Токенизатор: превращает текст в последовательность чисел (token IDs)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=local_only)
         # Сама BERT-модель: принимает token IDs → возвращает эмбеддинги
-        self.model = AutoModel.from_pretrained(model_name)
+        self.model = AutoModel.from_pretrained(model_name, local_files_only=local_only)
         self.model.to(self.device)  # Переносим модель на выбранное устройство
         self.model.eval()           # Режим вывода (отключаем dropout и batch normalization)
 

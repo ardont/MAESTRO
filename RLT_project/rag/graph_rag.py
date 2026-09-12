@@ -19,7 +19,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     "fas_complaint_44fz": {
         "id": "fas_complaint_44fz",
         "title": "Подача жалобы в Федеральную антимонопольную службу (ФАС России) по 44-ФЗ",
-        "url": "https://zakupki.mos.ru/knowledgebase/regulations",
+        "url": "https://zakupki.mos.ru/knowledgebase/article/regulation/cms",
         "keywords": [
             "фас", "жалоба", "жалобу", "обжалование", "отклонение заявки", "необоснованно отклонили",
             "ст 105", "статья 105", "статья 106", "105 фз", "нарушение заказчика", "подать в фас"
@@ -48,7 +48,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     "registration_44fz": {
         "id": "registration_44fz",
         "title": "Регистрация поставщика в ЕРУЗ / ЕИС по 44-ФЗ",
-        "url": "https://zakupki.mos.ru/knowledgebase/article/506041",
+        "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/506041",
         "keywords": [
             "регистрация", "еруз", "аккредитация", "еис", "госуслуги", "начать торги", "авторизация", "профиль"
         ],
@@ -73,7 +73,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     "quotation_session": {
         "id": "quotation_session",
         "title": "Участие в котировочных сессиях на Портале Поставщиков Москвы",
-        "url": "https://zakupki.mos.ru/knowledgebase/article/508580",
+        "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/508580",
         "keywords": [
             "котировочная сессия", "котировочные сессии", "оферта", "снижение цены", "победитель сессии", "шаг снижения"
         ],
@@ -99,7 +99,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     "contract_execution_upd": {
         "id": "contract_execution_upd",
         "title": "Электронное актирование и подписание УПД при исполнении контракта",
-        "url": "https://zakupki.mos.ru/knowledgebase/article/305516",
+        "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/305516",
         "keywords": [
             "электронное актирование", "упд", "приемка", "акт приемки", "исполнение контракта", "документ о приемке"
         ],
@@ -124,7 +124,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     "ecp_cryptopro": {
         "id": "ecp_cryptopro",
         "title": "Настройка электронной подписи (КЭП / ЭЦП) и КриптоПро CSP",
-        "url": "https://zakupki.mos.ru/knowledgebase/article/506376",
+        "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/506376",
         "keywords": [
             "криптопро", "cryptopro", "эцп", "кэп", "сертификат", "плагин", "рутокен", "jacarta", "токен", "браузер"
         ],

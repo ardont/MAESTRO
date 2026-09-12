@@ -55,7 +55,7 @@ os.makedirs(MEDIA_DIR, exist_ok=True)
 # ru-en-RoSBERTa — двуязычная BERT-модель от ai-forever (Сбер),
 # отлично понимает русский юридический и технический язык.
 # Скачивается автоматически при первом запуске (~1.3 ГБ).
-EMBEDDING_MODEL_NAME = "ai-forever/ru-en-RoSBERTa"
+EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "ai-forever/ru-en-RoSBERTa")
 
 # Размерность вектора эмбеддинга: каждый текст → массив из 1024 чисел.
 # Это «координаты» текста в многомерном смысловом пространстве.

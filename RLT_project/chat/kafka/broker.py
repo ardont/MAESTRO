@@ -1,10 +1,19 @@
 import os
 import json
+import logging
 
 from faststream import FastStream
 from faststream.kafka import KafkaBroker
 
 KAFKA_URL = os.getenv("KAFKA_URL", "kafka:29092")
+
+# This entry point does not run django.setup() or Django's LOGGING config.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
+for name in ("rag", "search", "chat.kafka"):
+    logging.getLogger(name).setLevel(logging.INFO)
 
 
 def serialize_kafka_key(value: object) -> bytes:

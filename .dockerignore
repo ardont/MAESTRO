@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+.idea
+.env
+.env.*
+**/__pycache__
+**/*.pyc
+**/*.log
+**/db.sqlite3
+qdrant_storage
+qdrant_local_storage
+pdf_cache
+.cache
+models
+media
