@@ -20,6 +20,7 @@ from typing import Dict, Any, List, Optional
 from .normalize_query import normalise_query, TERMINS
 from .search import search_hybrid
 from .graph_rag import find_graph_node, format_graph_context_for_llm, get_workflow_step_response
+from .url_utils import normalize_portal_url, normalize_markdown_links
 
 import hashlib
 import redis
@@ -159,16 +160,18 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
     # Если есть графовый контекст — добавляем его первым (он самый авторитетный и точный)
     if graph_context_text:
         context_parts.append(graph_context_text)
+        graph_url = normalize_portal_url(graph_node.get("url", "https://zakupki.mos.ru/knowledgebase/main"))
         citations.append({
             "title": graph_node["title"],
             "section": "Нормативно-правовая база",
-            "url": graph_node.get("url", "https://zakupki.mos.ru/knowledgebase/main")
+            "url": graph_url
         })
 
     for hit in hits:
         payload = hit.payload or {}
         title = payload.get("title", "Документ")
-        url = payload.get("url", "")
+        raw_url = payload.get("url", "")
+        url = normalize_portal_url(raw_url) if raw_url else ""
         sec_header = payload.get("section_header", "")
         text_chunk = payload.get("text", "")
         chunk_images = payload.get("images", [])
@@ -228,7 +231,7 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
         "title": "Портал поставщиков Москвы",
         "url": "https://zakupki.mos.ru/knowledgebase/main"
     }
-    primary_url = primary_citation.get("url") or "https://zakupki.mos.ru/knowledgebase/main"
+    primary_url = normalize_portal_url(primary_citation.get("url") or "https://zakupki.mos.ru/knowledgebase/main")
     primary_title = primary_citation.get("title") or "Портал поставщиков Москвы"
 
     # 5. СОСТАВЛЕНИЕ ПРОМПТА ДЛЯ LLM
@@ -300,16 +303,20 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
     # Исключаем любые случайные упоминания сторонних площадок
     llm_answer = re.sub(r'росэлторг\w*', 'Портал поставщиков Москвы', llm_answer, flags=re.IGNORECASE)
 
-    # Допустимые проверенные URL из найденных документов базы знаний
-    valid_urls_set = {c['url'] for c in citations if c.get('url') and c['url'].startswith('https://zakupki.mos.ru')}
+    # Нормализуем любые ссылки, упомянутые в тексте
+    llm_answer = normalize_markdown_links(llm_answer)
+
+    # Допустимые проверенные URL из найденных документов базы знаний (все нормализованы)
+    valid_urls_set = {normalize_portal_url(c['url']) for c in citations if c.get('url') and c['url'].startswith('https://zakupki.mos.ru')}
     valid_urls_set.add(primary_url)
 
     # Очищаем любые ссылки внутри текста, если они не присутствуют в точном реестре найденных документов
     def _sanitize_md_link(match):
         text = match.group(1)
         url = match.group(2).strip()
-        if url in valid_urls_set:
-            return f"[{text}]({url})"
+        norm_url = normalize_portal_url(url)
+        if norm_url in valid_urls_set:
+            return f"[{text}]({norm_url})"
         # Если ссылка не из проверенного набора, не оставляем битую ссылку — сохраняем чистый текст
         return text
 
@@ -318,8 +325,9 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
     # Удаляем любой сгенерированный LLM хвост с источником, чтобы не дублировать и не допускать 404
     llm_answer = re.sub(r'(\n|\r\n)*(-{3,}\s*)?(📖\s*)?\*{0,2}Источник:?\*{0,2}.*$', '', llm_answer, flags=re.IGNORECASE | re.DOTALL).strip()
 
-    # Вставляем гарантированно точный первоисточник НАПРЯМУЮ из метаданных
-    llm_answer = llm_answer.strip() + f"\n\n📖 **Источник:** [{primary_title}]({primary_url})"
+    # Вставляем гарантированно точный первоисточник НАПРЯМУЮ из метаданных (100% канонический URL)
+    canonical_primary_url = normalize_portal_url(primary_url)
+    llm_answer = llm_answer.strip() + f"\n\n📖 **Источник:** [{primary_title}]({canonical_primary_url})"
 
     # 8. ОБЯЗАТЕЛЬНОЕ ПРЕДЛОЖЕНИЕ ПОШАГОВОГО WORKFLOW (ПРИОРИТЕТ 4)
     workflow_offer = "\n\nХотите я помогу вам пройти этот процесс по шагам?"
