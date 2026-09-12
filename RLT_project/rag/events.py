@@ -32,3 +32,7 @@ class LLMOffTopicEvent(LLMBaseEvent):
     event: Literal[LLM_OFF_TOPIC_EVENT] = LLM_OFF_TOPIC_EVENT
     data: str
 
+LLM_NEED_OPERATOR_EVENT = 'need-operator' # сообщение не по теме
+class LLMNeedOperatorEvent(LLMBaseEvent):
+    event: Literal[LLM_NEED_OPERATOR_EVENT] = LLM_NEED_OPERATOR_EVENT
+    data: str

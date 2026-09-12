@@ -8,7 +8,7 @@ from rag.events import (
     LLM_TOKEN_EVENT,
     LLM_DONE_EVENT,
     LLM_ERROR_EVENT, REDIRECTED_TO_OPERATOR,
-    LLM_BLOCK_EVENT, LLM_OFF_TOPIC_EVENT,
+    LLM_BLOCK_EVENT, LLM_OFF_TOPIC_EVENT, LLM_NEED_OPERATOR_EVENT,
 )
 from rag.main_rag import rag_pipeline
 from ..constants import (
@@ -60,6 +60,7 @@ async def publish_msg(
         message_for_user: str,
         need_to_block_chat: bool = False,
         off_topic_message: bool = False,
+        need_to_call_support: bool = False,
 ) -> None:
     await broker.publish(
         NewTokenEvent(
@@ -83,7 +84,8 @@ async def publish_msg(
                 all_text=message_for_user,
             ),
             meta={"need_to_block_chat": need_to_block_chat,
-                  "off_topic_message": off_topic_message},
+                  "off_topic_message": off_topic_message,
+                  "need_to_call_support": need_to_call_support},
         ),
         headers={'event_name': EVENT_END_GENERATION},
         topic=topic,
@@ -188,6 +190,17 @@ async def new_message_handler(
                 message_for_user=llm_event.data,
                 need_to_block_chat=False,
                 off_topic_message=True,
+            )
+            return
+        elif llm_event.event == LLM_NEED_OPERATOR_EVENT:
+            await publish_msg(
+                broker=broker,
+                topic=LLM_RESPONSE_TOPIC,
+                new_message=new_message,
+                message_for_user=llm_event.data,
+                need_to_block_chat=False,
+                off_topic_message=False,
+                need_to_call_support=True
             )
             return
         else:
