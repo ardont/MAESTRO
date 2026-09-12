@@ -16,6 +16,7 @@ REDIRECTED_TO_OPERATOR = 'operator'
 class LLMDoneEvent(LLMBaseEvent):
     event: Literal[LLM_DONE_EVENT] = LLM_DONE_EVENT
     redirected_to: str | None = None
+    answer: str | None = None
 
 LLM_ERROR_EVENT = 'error'
 class LLMErrorEvent(LLMBaseEvent):
@@ -35,4 +36,5 @@ class LLMOffTopicEvent(LLMBaseEvent):
 LLM_NEED_OPERATOR_EVENT = 'need-operator' # сообщение не по теме
 class LLMNeedOperatorEvent(LLMBaseEvent):
     event: Literal[LLM_NEED_OPERATOR_EVENT] = LLM_NEED_OPERATOR_EVENT
+    user_query: str
     data: str

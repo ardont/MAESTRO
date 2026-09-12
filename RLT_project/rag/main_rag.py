@@ -22,10 +22,12 @@ from .normalize_query import normalise_query, TERMINS
 from .graph_rag import find_graph_node, format_graph_context_for_llm, get_workflow_step_response
 from .url_utils import normalize_portal_url, normalize_markdown_links
 
+from .workflow import handle_workflow
+from .graph_rag import PROCUREMENT_KNOWLEDGE_GRAPH
 from .router import check_guardrails
 from .events import (
     LLMBaseEvent, LLMTokenEvent, LLMDoneEvent, LLMErrorEvent,
-    LLMBlockEvent, LLMOffTopicEvent,
+    LLMBlockEvent, LLMOffTopicEvent, LLMNeedOperatorEvent,
 )
 
 import hashlib
@@ -50,7 +52,7 @@ def _get_active_ollama_model() -> str:
     return os.environ.get("OLLAMA_MODEL", "gpt-oss:20b").strip() or "gpt-oss:20b"
 
 
-def _call_local_gpt(prompt: str) -> str:
+def _call_local_gpt(prompt: str, on_token=None) -> str:
     """
     Вызов локальной LLM в Ollama через HTTP API.
     """
@@ -65,17 +67,39 @@ def _call_local_gpt(prompt: str) -> str:
             json={
                 "model": model_name,
                 "prompt": prompt,
-                "stream": False,
+                "stream": on_token is not None,
                 "options": {
                     "temperature": 0.2,
                     "top_p": 0.9,
                     "num_ctx": 4096
                 }
             },
-            timeout=90
+            timeout=90,
+            stream=on_token is not None,
         )
         if res.status_code == 200:
-            response_text = res.json().get("response", "").strip()
+            if on_token is not None:
+                parts = []
+                try:
+                    for line in res.iter_lines(chunk_size=1):
+                        if not line:
+                            continue
+                        packet = json.loads(line)
+                        if packet.get("error"):
+                            raise RuntimeError(packet["error"])
+                        token = packet.get("response", "")
+                        if token:
+                            parts.append(token)
+                            on_token(token)
+                        if packet.get("done"):
+                            break
+                    else:
+                        raise RuntimeError("Ollama stream ended without done")
+                finally:
+                    res.close()
+                response_text = "".join(parts).strip()
+            else:
+                response_text = res.json().get("response", "").strip()
             # Очистка возможных маркеров thinking
             marker = "...done thinking."
             if marker in response_text:
@@ -87,11 +111,13 @@ def _call_local_gpt(prompt: str) -> str:
                        model_name, res.status_code, res.text[:500])
     except Exception as e:
         logger.warning(f"[OLLAMA GENERATE ERROR] {e}")
+        if on_token is not None:
+            raise
 
     return ""
 
 
-def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[str] = None) -> Dict[str, Any]:
+def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[str] = None, on_token=None) -> Dict[str, Any]:
     """
     Полный сквозной RAG-пайплайн с памятью (context_cache), GraphRAG и пошаговым Workflow.
     """
@@ -101,6 +127,10 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     logger.info("[GUARDRAIL] blocked=%s reason=%s", guardrail["is_blocked"], guardrail.get("reason"))
     if guardrail["is_blocked"]:
         return {"event": "block", "answer": guardrail["reply"], "citations": [], "images": []}
+
+    workflow_result = handle_workflow(user_message, chat)
+    if workflow_result is not None:
+        return workflow_result
 
     # Classify before retrieval/cache: unrelated nearest neighbours are not evidence
     # that the user is asking about the platform. Ambiguous follow-ups stay on topic.
@@ -153,7 +183,8 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     cached_context = []
     if chat and hasattr(chat, "context_cache") and chat.context_cache:
         # Если в кэше есть сохраненные документы предыдущих шагов диалога
-        for item in chat.context_cache:
+        cache_items = chat.context_cache.get("items", []) if isinstance(chat.context_cache, dict) else chat.context_cache
+        for item in cache_items:
             if isinstance(item, dict) and "text" in item:
                 # Простая проверка релевантности кэша текущему вопросу
                 kw_matches = sum(1 for w in user_message.lower().split() if len(w) > 3 and w in item.get("text", "").lower())
@@ -161,7 +192,8 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
                     cached_context.append(item)
 
     # 2. ПОИСК В ГРАФЕ ЗНАНИЙ (GraphRAG / Graphify) (ПРИОРИТЕТ 2)
-    graph_node = find_graph_node(user_message)
+    active_node = PROCUREMENT_KNOWLEDGE_GRAPH.get(getattr(chat, "active_workflow", None))
+    graph_node = active_node or find_graph_node(user_message)
     graph_context_text = ""
     if graph_node:
         graph_context_text = format_graph_context_for_llm(graph_node)
@@ -232,7 +264,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     # Сохраняем в кэш контекста чата (ПРИОРИТЕТ 3)
     if chat:
         try:
-            workflow_to_offer = graph_node["id"] if graph_node else "general_guide"
+            workflow_to_offer = graph_node["id"] if graph_node else None
             chat.context_cache = {
                 "items": new_cache_items[:6],
                 "suggested_workflow": workflow_to_offer,
@@ -242,6 +274,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
             logger.info(f"[CHAT CACHE] Контекст сохранен в БД для чата {chat.id}")
         except Exception as e:
             logger.warning(f"[CHAT CACHE ERROR] Не удалось сохранить context_cache: {e}")
+            raise
 
     # Если ни документов, ни графа нет — выдаем вежливую заглушку
     if not context_parts:
@@ -268,7 +301,11 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
     # 5. СОСТАВЛЕНИЕ ПРОМПТА ДЛЯ LLM
     chat_history_text = ""
-    if chat:
+    if active_node:
+        chat_history_text = (f"Пользователь проходит процесс {active_node['title']}, "
+                             f"текущий шаг {chat.current_step}. Ответь на уточнение по этому шагу; "
+                             "не начинай процесс заново и не переходи к следующему шагу.\n\n")
+    if chat and hasattr(chat, "messages"):
         # Получаем последние 4 сообщения из чата (кроме текущего, которое уже добавлено в БД)
         # Сортируем по created_at, чтобы получить хронологию
         recent_messages = chat.messages.order_by('-created_at')[1:5]
@@ -277,7 +314,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
             for m in reversed(recent_messages):
                 role_name = "Пользователь" if m.author.role == "customer" else "Ассистент"
                 history_lines.append(f"{role_name}: {m.text}")
-            chat_history_text = "История предыдущих сообщений диалога:\n" + "\n".join(history_lines) + "\n\n"
+            chat_history_text += "История предыдущих сообщений диалога:\n" + "\n".join(history_lines) + "\n\n"
 
     prompt = f"""Ты — интеллектуальный эксперт службы поддержки пользователей Портала поставщиков Москвы (zakupki.mos.ru) и законодательства о закупках (44-ФЗ, 223-ФЗ).
 Ответь на вопрос пользователя, опираясь ИСКЛЮЧИТЕЛЬНО на предоставленную базу знаний и нормативные факты.
@@ -300,7 +337,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     logger.debug(f"[LLM PROMPT] Длина промпта: {len(prompt)} символов")
     print(f"[RAG PIPELINE] Отправка запроса в Ollama...")
     t_llm0 = time.time()
-    llm_answer = _call_local_gpt(prompt)
+    llm_answer = _call_local_gpt(prompt, on_token=on_token) if on_token else _call_local_gpt(prompt)
     t_llm1 = time.time()
     llm_duration = t_llm1 - t_llm0
     logger.info(f"[LLM TIMING] Генерация ответа заняла: {llm_duration:.2f} сек.")
@@ -367,7 +404,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
     # 8. ОБЯЗАТЕЛЬНОЕ ПРЕДЛОЖЕНИЕ ПОШАГОВОГО WORKFLOW (ПРИОРИТЕТ 4)
     workflow_offer = "\n\nХотите я помогу вам пройти этот процесс по шагам?"
-    if workflow_offer.strip() not in llm_answer:
+    if chat and graph_node and not active_node and workflow_offer.strip() not in llm_answer:
         llm_answer = llm_answer.strip() + workflow_offer
 
     t_end = time.time()
@@ -403,27 +440,51 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 async def rag_pipeline(
     user_message: str, chat=None, category_filter: Optional[str] = None,
 ) -> AsyncIterator[LLMBaseEvent]:
-    """Run the complete pipeline without blocking the Kafka event loop.
+    """Bridge blocking retrieval/Ollama to live asynchronous token events."""
+    loop = asyncio.get_running_loop()
+    queue = asyncio.Queue()
+    streamed = False
 
-    Synchronous retrieval, Redis and Ollama execute in a worker thread. Emit the
-    final sanitized answer as one token event (not raw Ollama tokens), then done.
-    block, off-topic and error are terminal events and must not be followed by done.
-    Kafka requires only user_message; chat is optional for the legacy test UI.
-    """
+    def emit(token):
+        loop.call_soon_threadsafe(queue.put_nowait, ("token", token))
+
+    async def run():
+        try:
+            result = await asyncio.to_thread(
+                rag_pipeline_result, user_message, chat=chat,
+                category_filter=category_filter, on_token=emit,
+            )
+            await queue.put(("result", result))
+        except Exception as exc:
+            await queue.put(("error", exc))
+
+    if user_message.strip().lower() == "оператор":
+        yield LLMNeedOperatorEvent(user_query=user_message, data='Запрос был передан оператору')
+        return
+    worker = asyncio.create_task(run())
     try:
-        result = await asyncio.to_thread(
-            rag_pipeline_result, user_message, chat=chat, category_filter=category_filter,
-        )
-        logger.info("[RAG RESULT] event=%s answer_chars=%s", result.get("event", "token+done"),
-                    len(result.get("answer", "")))
-        if result.get("event") == "block":
-            yield LLMBlockEvent(data=result["answer"])
+        while True:
+            kind, value = await queue.get()
+            if kind == "token":
+                streamed = True
+                yield LLMTokenEvent(data=value)
+                continue
+            if kind == "error":
+                raise value
+            result = value
+            logger.info("[RAG RESULT] event=%s answer_chars=%s",
+                        result.get("event", "token+done"), len(result.get("answer", "")))
+            if result.get("event") == "block":
+                yield LLMBlockEvent(data=result["answer"])
+            elif result.get("event") == "off-topic":
+                yield LLMOffTopicEvent(data=result["answer"])
+            else:
+                if not streamed:
+                    yield LLMTokenEvent(data=result["answer"])
+                yield LLMDoneEvent(answer=result["answer"])
             return
-        if result.get("event") == "off-topic":
-            yield LLMOffTopicEvent(data=result["answer"])
-            return
-        yield LLMTokenEvent(data=result["answer"])
-        yield LLMDoneEvent()
     except Exception:
         logger.exception("RAG pipeline failed")
         yield LLMErrorEvent(data="Не удалось обработать запрос. Попробуйте позже.")
+    finally:
+        worker.cancel()

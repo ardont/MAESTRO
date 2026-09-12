@@ -10,7 +10,6 @@ from chat.models import User, Message, Chat
 from chat.serializers import MessageSerializer
 from .main_rag import rag_pipeline_result
 from .router import check_guardrails, route_support_line
-from .graph_rag import get_workflow_step_response
 
 logger = logging.getLogger("rag")
 
@@ -24,20 +23,6 @@ OPERATOR_TRIGGERS = [
 ]
 
 EXACT_OPERATOR_WORDS = {"оператор", "оператора", "человек", "человека", "специалист", "специалиста"}
-
-AFFIRMATIVE_TRIGGERS = [
-    "да", "давай", "хочу", "согласен", "помоги", "давайте", "готов", "конечно", "ага"
-]
-
-STEP_NEXT_TRIGGERS = [
-    "далее", "дальше", "следующий", "следующий шаг", "готово", "сделано",
-    "ок", "продолжить", "шаг", "вперед", "следующее"
-]
-
-STEP_STOP_TRIGGERS = [
-    "стоп", "завершить", "хватит", "отмена", "выйти", "закончить"
-]
-
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -125,90 +110,6 @@ def api_ask(request):
                 "answer_message": str(out_msg.id),
             }
         }, status=200)
-
-    # 3. ИНТЕРАКТИВНЫЙ ПОШАГОВЫЙ WORKFLOW (ПРИОРИТЕТ 4)
-    # Сценарий А: Пользователь отвечает «Да» на предложение пройти процесс по шагам
-    is_affirmative = q_lower in AFFIRMATIVE_TRIGGERS or any(q_lower.startswith(w) for w in AFFIRMATIVE_TRIGGERS)
-    if is_affirmative and not chat.active_workflow and chat.context_cache:
-        suggested = chat.context_cache.get("suggested_workflow") or chat.context_cache.get("graph_node_id")
-        if suggested:
-            chat.active_workflow = suggested
-            chat.current_step = 0
-            wf_res = get_workflow_step_response(suggested, 0)
-            chat.current_step = wf_res["next_step"]
-            chat.save(update_fields=["active_workflow", "current_step"])
-
-            bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
-            out_msg = Message.objects.create(
-                chat=chat,
-                author=bot,
-                text=wf_res["reply"],
-                is_read=True
-            )
-
-            logger.info(f"[WORKFLOW ACTIVATED] Чат {chat.id}: запущен workflow '{suggested}'")
-            return JsonResponse({
-                "answer": wf_res["reply"],
-                "citations": [],
-                "images": [],
-                "active_workflow": chat.active_workflow,
-                "current_step": chat.current_step,
-                "ids": {
-                    "user": str(user.id),
-                    "chat": str(chat.id),
-                    "question_message": str(in_msg.id),
-                    "answer_message": str(out_msg.id),
-                }
-            }, status=200)
-
-    # Сценарий Б: Пользователь уже находится внутри Workflow и нажимает «Далее» или «Завершить»
-    if chat.active_workflow:
-        if any(w in q_lower for w in STEP_STOP_TRIGGERS):
-            chat.active_workflow = None
-            chat.current_step = 0
-            chat.save(update_fields=["active_workflow", "current_step"])
-
-            stop_reply = "Интерактивный пошаговый процесс завершен. Если у вас возникнут другие вопросы — с радостью помогу!"
-            bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
-            out_msg = Message.objects.create(chat=chat, author=bot, text=stop_reply, is_read=True)
-
-            return JsonResponse({
-                "answer": stop_reply,
-                "citations": [],
-                "images": [],
-                "active_workflow": None,
-                "ids": {
-                    "user": str(user.id),
-                    "chat": str(chat.id),
-                    "question_message": str(in_msg.id),
-                    "answer_message": str(out_msg.id),
-                }
-            }, status=200)
-
-        elif any(w in q_lower for w in STEP_NEXT_TRIGGERS) or is_affirmative:
-            wf_res = get_workflow_step_response(chat.active_workflow, chat.current_step)
-            chat.current_step = wf_res["next_step"]
-            if wf_res["is_finished"]:
-                chat.active_workflow = None
-            chat.save(update_fields=["active_workflow", "current_step"])
-
-            bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
-            out_msg = Message.objects.create(chat=chat, author=bot, text=wf_res["reply"], is_read=True)
-
-            logger.info(f"[WORKFLOW STEP] Чат {chat.id}: шаг {chat.current_step}")
-            return JsonResponse({
-                "answer": wf_res["reply"],
-                "citations": [],
-                "images": [],
-                "active_workflow": chat.active_workflow,
-                "current_step": chat.current_step,
-                "ids": {
-                    "user": str(user.id),
-                    "chat": str(chat.id),
-                    "question_message": str(in_msg.id),
-                    "answer_message": str(out_msg.id),
-                }
-            }, status=200)
 
     # 4. СТАНДАРТНЫЙ RAG ЗАПРОС
     line_info = route_support_line(question)

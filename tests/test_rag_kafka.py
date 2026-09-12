@@ -102,7 +102,7 @@ class PipelineTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual([e.event for e in events], ['token', 'done'])
             self.assertIn('Источник:', events[0].data)
             self.assertNotIn('example.com', events[0].data)
-            self.assertIn('по шагам', events[0].data)
+            self.assertNotIn('Хотите я помогу', events[0].data)
 
     async def test_cache_hit_and_category_isolation(self):
         cache = Mock()
@@ -156,20 +156,26 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
             user_uuid=uuid4(), chat_id=42, text='Вопрос',
         ))
 
+    def setUp(self):
+        loader = patch.object(self.handlers, 'load_conversation', return_value=None)
+        loader.start()
+        self.addCleanup(loader.stop)
+
     async def test_all_terminal_events_publish_once(self):
         from rag.events import LLMErrorEvent
         cases = [
             ([LLMTokenEvent(data='A'), LLMTokenEvent(data='B'), LLMDoneEvent()], {}, 'AB', 3),
+            ([LLMTokenEvent(data='draft'), LLMDoneEvent(answer='Final with source')], {}, 'Final with source', 2),
             ([LLMBlockEvent(data='Blocked'), LLMDoneEvent()],
-             {'need_to_block_chat': True, 'off_topic_message': False}, 'Blocked', 2),
+             {'need_to_block_chat': True, 'off_topic_message': False, 'need_to_call_support': False, 'user_query': None}, 'Blocked', 2),
             ([LLMOffTopicEvent(data='Off topic'), LLMDoneEvent()],
-             {'need_to_block_chat': False, 'off_topic_message': True}, 'Off topic', 2),
+             {'need_to_block_chat': False, 'off_topic_message': True, 'need_to_call_support': False, 'user_query': None}, 'Off topic', 2),
             ([LLMErrorEvent(data='internal'), LLMDoneEvent()], {'error': True}, None, 2),
             ([LLMDoneEvent(redirected_to='operator')], {'need_to_call_support': True}, None, 1),
         ]
         for events, meta, full_text, count in cases:
             with self.subTest(events=events):
-                async def generate(prompt):
+                async def generate(prompt, chat=None):
                     self.assertEqual(prompt, self.message.data.text)
                     for event in events:
                         yield event
@@ -218,4 +224,5 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(publish.call_count, 2)
         self.assertEqual(publish.call_args.args[0].meta, {
             'need_to_block_chat': True, 'off_topic_message': False,
+            'need_to_call_support': False, 'user_query': None,
         })

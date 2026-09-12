@@ -1,4 +1,5 @@
 import os
+import asyncio
 from logging import getLogger
 
 from faststream.kafka import KafkaBroker
@@ -11,6 +12,7 @@ from rag.events import (
     LLM_BLOCK_EVENT, LLM_OFF_TOPIC_EVENT, LLM_NEED_OPERATOR_EVENT,
 )
 from rag.main_rag import rag_pipeline
+from rag.conversation import load_conversation
 from ..constants import (
     EVENT_NEW_TOKEN,
     EVENT_END_GENERATION
@@ -61,6 +63,7 @@ async def publish_msg(
         need_to_block_chat: bool = False,
         off_topic_message: bool = False,
         need_to_call_support: bool = False,
+        user_query: str | None = None,
 ) -> None:
     await broker.publish(
         NewTokenEvent(
@@ -85,7 +88,9 @@ async def publish_msg(
             ),
             meta={"need_to_block_chat": need_to_block_chat,
                   "off_topic_message": off_topic_message,
-                  "need_to_call_support": need_to_call_support},
+                  "need_to_call_support": need_to_call_support,
+                  "user_query": user_query,
+                  },
         ),
         headers={'event_name': EVENT_END_GENERATION},
         topic=topic,
@@ -100,7 +105,14 @@ async def new_message_handler(
     token_id = 0
     logger.info(f"New message: {prompt}; chat_id: {new_message.data.chat_id}")
 
-    async for llm_event in rag_pipeline(prompt):
+    try:
+        chat = await asyncio.to_thread(load_conversation, new_message.data.user_uuid, new_message.data.chat_id)
+    except Exception:
+        logger.exception("Failed to load conversation chat_id=%s", new_message.data.chat_id)
+        await publish_error_msg(broker, LLM_RESPONSE_TOPIC, new_message,
+                                "Не удалось загрузить состояние диалога. Попробуйте позже.")
+        return
+    async for llm_event in rag_pipeline(prompt, chat=chat):
         logger.info("RAG EVENT chat_id=%s event=%s", new_message.data.chat_id, llm_event.event)
         if llm_event.event == LLM_TOKEN_EVENT:
             logger.info(
@@ -156,7 +168,7 @@ async def new_message_handler(
                             user_uuid=new_message.data.user_uuid,
                             chat_id=new_message.data.chat_id,
                             details="Done",
-                            all_text=full_msg,
+                            all_text=llm_event.answer if llm_event.answer is not None else full_msg,
                         )
                     ),
                     headers={'event_name': EVENT_END_GENERATION},
@@ -200,7 +212,8 @@ async def new_message_handler(
                 message_for_user=llm_event.data,
                 need_to_block_chat=False,
                 off_topic_message=False,
-                need_to_call_support=True
+                need_to_call_support=True,
+                user_query=llm_event.user_query
             )
             return
         else:
