@@ -20,7 +20,8 @@ from typing import Dict, Any, List, Optional, AsyncIterator
 
 from .normalize_query import normalise_query, TERMINS
 from .graph_rag import find_graph_node, format_graph_context_for_llm, get_workflow_step_response
-from .url_utils import normalize_portal_url, normalize_markdown_links
+from .url_utils import normalize_portal_url, normalize_markdown_links, clean_citation_title
+
 
 from .workflow import handle_workflow
 from .graph_rag import PROCUREMENT_KNOWLEDGE_GRAPH
@@ -237,8 +238,18 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         
     t_search1 = time.time()
     search_duration = t_search1 - t_search0
-    logger.info(f"[SEARCH TIMING] Поиск в Qdrant занял: {search_duration:.3f} сек. Найдено точек: {len(hits)}")
-    print(f"[RAG PIPELINE] Поиск в базе занял: {search_duration:.2f} сек. Найдено документов: {len(hits)}")
+    max_score = max([getattr(h, "score", 0.0) for h in hits], default=0.0)
+    logger.info(f"[SEARCH TIMING] Поиск в Qdrant занял: {search_duration:.3f} сек. Найдено точек: {len(hits)} (Max Score: {max_score:.4f})")
+    print(f"[RAG PIPELINE] Поиск в базе занял: {search_duration:.2f} сек. Найдено документов: {len(hits)} (Max Score: {max_score:.4f})")
+
+    # ПОРОГ РЕЛЕВАНТНОСТИ (исключение случайных источников и галлюцинаций на бессмысленные запросы вроде "хочу омлет")
+    if not graph_node and max_score < 0.28:
+        logger.info(f"[SCORE THRESHOLD] Запрос '{user_message}' отсечен (max_score={max_score:.4f} < 0.28). Гарантированный отказ без ложных источников.")
+        return {
+            "answer": "Извините, но я могу отвечать только на вопросы, связанные с Порталом поставщиков Москвы (zakupki.mos.ru) и законодательством о закупках (44-ФЗ, 223-ФЗ). Пожалуйста, задайте вопрос по теме закупок или работе сервисов Портала.",
+            "citations": [],
+            "images": []
+        }
 
     # 4. АГРЕГАЦИЯ КОНТЕКСТА И ИСТОЧНИКОВ
     context_parts = []
@@ -250,17 +261,19 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     if graph_context_text:
         context_parts.append(graph_context_text)
         graph_url = normalize_portal_url(graph_node.get("url", "https://zakupki.mos.ru/knowledgebase/main"))
+        graph_title = clean_citation_title(graph_node["title"], graph_url)
         citations.append({
-            "title": graph_node["title"],
+            "title": graph_title,
             "section": "Нормативно-правовая база",
             "url": graph_url
         })
 
     for hit in hits:
         payload = hit.payload or {}
-        title = payload.get("title", "Документ")
+        raw_title = payload.get("title", "Документ")
         raw_url = payload.get("url", "")
         url = normalize_portal_url(raw_url) if raw_url else ""
+        title = clean_citation_title(raw_title, url)
         sec_header = payload.get("section_header", "")
         text_chunk = payload.get("text", "")
         chunk_images = payload.get("images", [])
@@ -274,6 +287,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
                 "section": sec_header,
                 "url": url
             })
+
 
         for img in chunk_images:
             if img not in images:

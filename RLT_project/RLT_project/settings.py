@@ -190,10 +190,16 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'chat': {
+            'handlers': ['console', 'app_file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
     'root': {
         'handlers': ['console', 'app_file'],
         'level': 'INFO',
     }
 }
+
 

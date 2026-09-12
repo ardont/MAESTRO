@@ -64,24 +64,77 @@ def api_ask(request):
     is_toxic = guardrail.get("is_blocked", False)
 
     if is_operator_requested or is_toxic:
-        # Назначаем чат на специалиста поддержки (Алгоритм: наименьшая загруженность)
+        # 1. Анализируем контекст диалога для составления Context Card
+        cache = chat.context_cache if isinstance(chat.context_cache, dict) else {}
+        last_line_info = cache.get("last_line_info") or route_support_line(question)
+        
+        # Поиск кода ошибки (в текущем сообщении или в истории)
+        from .router import extract_error_code
+        detected_error = extract_error_code(question)
+        if not detected_error:
+            for prev_m in chat.messages.filter(author=user).order_by('-created_at')[:5]:
+                ec = extract_error_code(prev_m.text)
+                if ec:
+                    detected_error = ec
+                    break
+
+        # Пройденные чекпоинты из workflow
+        checkpoints = cache.get("checkpoints", [])
+        if not checkpoints:
+            checkpoints = ["Первичное обращение пользователя; пошаговый мастер не запускался"]
+
+        # Определение фактической линии (L1, L2 или L3)
+        is_l3 = (last_line_info.get("line") == "L3") or bool(detected_error)
+        is_l2 = (last_line_info.get("line") == "L2") and not is_l3
+        target_line = "L3" if is_l3 else ("L2" if is_l2 else "L1")
+
+        # Формулировка ответа для пользователя в чате (строго по согласованию)
+        if is_toxic:
+            reply_text = str(guardrail.get('reply', '')) + "\n\nПередаю диалог дежурному оператору службы поддержки..."
+        elif is_l3:
+            reply_text = (
+                "Данное обращение классифицировано как вопрос 3-й линии (системно-техническая экспертиза / разработчики платформы). "
+                "Ваша заявка сформирована и направлена на рассмотрение дежурному инженеру. "
+                "Специалист 2-й линии уже подключается к чату для уточнения технических деталей и ведения вашего обращения."
+            )
+        else:
+            line_label = "Линии технической поддержки" if is_l2 else "Линии общей поддержки"
+            reply_text = (
+                f"Передаю ваш диалог дежурному специалисту {line_label}. "
+                "Я передал оператору историю нашей беседы и пройденные шаги, чтобы вам не пришлось повторять всё заново. "
+                "Специалист уже подключается..."
+            )
+
+        # 2. Формируем Context Card для оператора
+        orig_issue = question
+        if len(question) <= 15:
+            prev_user_msgs = chat.messages.filter(author=user).exclude(id=in_msg.id).order_by('-created_at')
+            if prev_user_msgs.exists():
+                orig_issue = prev_user_msgs.first().text
+
+        operator_card = {
+            "issue": orig_issue,
+            "line": target_line,
+            "line_name": "Экспертная линия и интеграции (Инженеры / ФАС)" if is_l3 else ("Линия технической поддержки" if is_l2 else "Линия общей поддержки"),
+            "checkpoints": checkpoints,
+            "error_code": detected_error or "Не обнаружен"
+        }
+
+        # Сохраняем карточку в кэш контекста чата
+        cache["operator_card"] = operator_card
+        chat.context_cache = cache
+
+        # Назначаем чат на специалиста поддержки
         from django.db.models import Count
         support_agent = User.objects.filter(role="support_staff", is_active=True).annotate(
             active_chats=Count('assigned_chats')
         ).order_by('active_chats').first()
         
         if not support_agent:
-            # Фолбэк: если в базе вообще нет операторов, создаем дежурного
             support_agent = User.objects.create(role="support_staff", is_active=True)
             
         chat.assigned_to = support_agent
-        chat.save(update_fields=["assigned_to"])
-
-        reply_text = (
-            "Перевожу на специалиста."
-            if is_operator_requested else
-            str(guardrail.get('reply', '')) + "\n\nПеревожу на специалиста."
-        )
+        chat.save(update_fields=["assigned_to", "context_cache"])
 
         bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
         out_msg = Message.objects.create(
@@ -91,17 +144,24 @@ def api_ask(request):
             is_read=True
         )
 
-        logger.info(f"[OPERATOR TRANSFER] Чат {chat.id} переведен на специалиста (User ID: {support_agent.id})")
+        logger.info(f"=== [OPERATOR ESCALATION CARD] ===")
+        logger.info(f"  Суть проблемы: {operator_card['issue']}")
+        logger.info(f"  Линия: {operator_card['line']} ({operator_card['line_name']})")
+        logger.info(f"  Чекпоинты: {operator_card['checkpoints']}")
+        logger.info(f"  Код ошибки: {operator_card['error_code']}")
+        logger.info(f"==================================")
+        print(f"[OPERATOR TRANSFER] Чат {chat.id} передан на {operator_card['line']} оператору {support_agent.id}")
 
         return JsonResponse({
             "answer": reply_text,
             "citations": [],
             "images": [],
             "line_info": {
-                "line": "OPERATOR",
-                "name": "Переведено на дежурного специалиста",
-                "badge_color": "#2563eb"
+                "line": target_line,
+                "name": operator_card["line_name"],
+                "badge_color": "#d97706" if is_l3 else ("#0284c7" if is_l2 else "#2563eb")
             },
+            "operator_card": operator_card,
             "assigned_to": str(support_agent.id),
             "ids": {
                 "user": str(user.id),
@@ -110,6 +170,7 @@ def api_ask(request):
                 "answer_message": str(out_msg.id),
             }
         }, status=200)
+
 
     # 3. ПРОВЕРКА ПОШАГОВОГО WORKFLOW (МГНОВЕННЫЙ ОТВЕТ БЕЗ LLM)
     from .workflow import handle_workflow
@@ -146,6 +207,12 @@ def api_ask(request):
 
     # 4. СТАНДАРТНЫЙ RAG ЗАПРОС
     line_info = route_support_line(question)
+    if chat and hasattr(chat, "context_cache"):
+        cache = chat.context_cache if isinstance(chat.context_cache, dict) else {}
+        cache["last_line_info"] = line_info
+        chat.context_cache = cache
+        if hasattr(chat, "save"):
+            chat.save(update_fields=["context_cache"])
 
     try:
         rag_res = rag_pipeline_result(
@@ -166,11 +233,15 @@ def api_ask(request):
                 is_read=True
             )
 
+        resp_line = rag_res.get("line_info") or line_info
+        logger.info(f"[API ASK SUCCESS] chat={chat.id} line={resp_line['line']} citations_count={len(citations)}")
+        print(f"[API ASK SUCCESS] Чат {chat.id} отвечен по линии {resp_line['line']} ({resp_line.get('name')})")
+
         return JsonResponse({
             "answer": answer_text,
             "citations": citations,
             "images": images,
-            "line_info": rag_res.get("line_info") or line_info,
+            "line_info": resp_line,
             "timings": rag_res.get("timings", {}),
             "ids": {
                 "user": str(user.id),
@@ -183,6 +254,7 @@ def api_ask(request):
     except Exception as e:
         logger.exception(f"[API_ASK ERROR] Ошибка обработки запроса: {e}")
         return JsonResponse({"error": str(e)}, status=500)
+
 
 
 @csrf_exempt

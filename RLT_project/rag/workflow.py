@@ -1,34 +1,43 @@
 """Shared workflow routing for HTTP and Kafka conversations."""
 import re
+import logging
 from .graph_rag import PROCUREMENT_KNOWLEDGE_GRAPH, get_workflow_step_response, find_graph_node
+
+logger = logging.getLogger("rag")
 
 WORKFLOW_TO_LINE = {
     "ecp_cryptopro": {
         "line": "L2",
-        "name": "Линия технической поддержки (ЭЦП, КриптоПро, МЧД, ПО)",
+        "name": "Линия технической поддержки (ЭЦП, ПО, УПД)",
+        "badge_color": "#0284c7"
+    },
+    "contract_execution_upd": {
+        "line": "L2",
+        "name": "Линия технической поддержки (ЭЦП, ПО, УПД)",
         "badge_color": "#0284c7"
     },
     "quotation_session": {
-        "line": "L3",
-        "name": "Линия котировочных сессий и мини-аукционов",
-        "badge_color": "#eab308"
+        "line": "L1",
+        "name": "Линия общей поддержки и навигации по Порталу Поставщиков",
+        "badge_color": "#2563eb"
     },
-    "registration_44fz": {
-        "line": "L6",
-        "name": "Линия регистрации, аккредитации и управления профилем",
-        "badge_color": "#14b8a6"
+    "registration_portal": {
+        "line": "L1",
+        "name": "Линия общей поддержки и навигации по Порталу Поставщиков",
+        "badge_color": "#2563eb"
     },
-    "contract_execution_upd": {
-        "line": "L5",
-        "name": "Линия электронного актирования и исполнения контрактов (УПД/ЕИС)",
-        "badge_color": "#8b5cf6"
+    "registration_eruz": {
+        "line": "L1",
+        "name": "Линия общей поддержки и навигации по Порталу Поставщиков",
+        "badge_color": "#2563eb"
     },
     "fas_complaint_44fz": {
-        "line": "L7",
-        "name": "Линия правовой экспертизы (44-ФЗ / 223-ФЗ / ФАС)",
-        "badge_color": "#7c3aed"
+        "line": "L3",
+        "name": "Экспертная линия и интеграции (Инженеры / ФАС)",
+        "badge_color": "#d97706"
     }
 }
+
 
 
 def handle_workflow(message, chat):
@@ -114,11 +123,24 @@ def handle_workflow(message, chat):
     result = get_workflow_step_response(node_id, step)
     chat.active_workflow = None if result["is_finished"] else node_id
     chat.current_step = result["next_step"]
+
+    node = PROCUREMENT_KNOWLEDGE_GRAPH.get(node_id, {})
+    # Сохраняем пройденные шаги (чекпоинты) для контекстной карточки оператора
+    checkpoints = cache.get("checkpoints", [])
+    if not isinstance(checkpoints, list):
+        checkpoints = []
+    step_summary = f"Шаг {step + 1}: {node.get('title', '')} — выполнен"
+    if step_summary not in checkpoints:
+        checkpoints.append(step_summary)
+    cache["checkpoints"] = checkpoints
+
     if result["is_finished"]:
         cache.pop("suggested_workflow", None)
-        chat.context_cache = cache
+
+    chat.context_cache = cache
     if hasattr(chat, "save"):
         chat.save(update_fields=["active_workflow", "current_step", "context_cache"])
+
 
     node = PROCUREMENT_KNOWLEDGE_GRAPH.get(node_id, {})
     citations = []
