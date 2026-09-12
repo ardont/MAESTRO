@@ -71,16 +71,26 @@ def clean_citation_title(title: str, url: str = "") -> str:
     if url:
         m_ais = re.search(r'knowledgebase/article/(?:details/(?:ais/)?|details/)?(\d+)(?:[/?#]|$)', url)
         if m_ais:
-            verified = get_verified_article(m_ais.group(1))
+            art_id = m_ais.group(1)
+            verified = get_verified_article(art_id)
             if verified and verified.get("title"):
                 return verified["title"]
+            if art_id in {"572822", "493330", "398754"}:
+                return "Инструкция по работе с банковскими гарантиями"
+
+        if "банковск" in url.lower() or "garanti" in url.lower():
+            return "Инструкция по работе с банковскими гарантиями"
 
     cleaned = (title or "").strip()
     # Убираем технический мусор парсеров
     cleaned = re.sub(r'^SOURCE\s+URL:\s*https?://\S+', '', cleaned).strip()
     cleaned = re.sub(r'https?://\S+', '', cleaned).strip()
     cleaned = cleaned.strip(" -:—|")
-    return cleaned if cleaned else "Официальная база знаний Портала поставщиков"
+    if not cleaned or "roseltorg" in cleaned.lower() or cleaned.startswith("("):
+        if "гаранти" in (title or "").lower() or "обеспечен" in (title or "").lower():
+            return "Инструкция по работе с банковскими гарантиями"
+        return "Официальная база знаний Портала поставщиков"
+    return cleaned
 
 
 KNOWN_DOC_REDIRECTS = {
@@ -115,7 +125,13 @@ def normalize_portal_url(url: str) -> str:
         verified = get_verified_article(art_id)
         if verified:
             return verified["url"]
-        return f"https://zakupki.mos.ru/knowledgebase/article/details/ais/{art_id}"
+        
+        # Специальное перенаправление для банковских гарантий (вместо неработающих ID из росэлторга)
+        if art_id in {"572822", "493330", "398754"} or "garanti" in url.lower():
+            return "https://zakupki.mos.ru/cms/Media/docs/%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%86%D0%B8%D1%8F%20%D0%BF%D0%BE%20%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%B5%20%D1%81%20%D0%B1%D0%B0%D0%BD%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8%D0%BC%D0%B8%20%D0%B3%D0%B0%D1%80%D0%B0%D0%BD%D1%82%D0%B8%D1%8F%D0%BC%D0%B8.pdf"
+        
+        # Если ID нет в базе Портала — отдаем главную страницу базы знаний во избежание пустой страницы
+        return "https://zakupki.mos.ru/knowledgebase/main"
 
     # 4. Статьи регламентов CMS: буквенно-цифровой идентификатор (например 48caq6vpp4pn97wbaxsfxnbn4b)
     m_cms = re.search(r'knowledgebase/article/(?:details/(?:cms/)?|details/)?([a-z0-9]{20,})(?:[/?#]|$)', url, re.IGNORECASE)

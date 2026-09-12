@@ -229,10 +229,34 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     active_node_id = getattr(chat, "active_workflow", None)
     active_node = PROCUREMENT_KNOWLEDGE_GRAPH.get(active_node_id) if active_node_id else None
 
-    # Если вопрос пользователя относится к ДРУГОЙ теме — сбрасываем залипший active_workflow
-    if active_node and new_graph_node and new_graph_node["id"] != active_node["id"]:
-        logger.info(f"[TOPIC SWITCH] Смена темы с '{active_node['id']}' на '{new_graph_node['id']}'. Сброс контекста.")
-        if chat:
+    # Проверяем, является ли вопрос продолжением текущего пошагового workflow
+    is_workflow_continuation = False
+    if active_node:
+        msg_l = user_message.lower().strip()
+        step_words = ["дальше", "далее", "следующ", "продолж", "потом", "шаг", "второй", "третий", "четверт", "давай", "ок", "понял"]
+        has_step_intent = any(w in msg_l for w in step_words)
+        has_node_keywords = any(kw in msg_l for kw in active_node.get("keywords", []))
+        if has_step_intent or has_node_keywords:
+            is_workflow_continuation = True
+
+    if new_graph_node:
+        if active_node and new_graph_node["id"] != active_node["id"]:
+            logger.info(f"[TOPIC SWITCH] Смена темы с '{active_node['id']}' на '{new_graph_node['id']}'. Сброс контекста.")
+            if chat:
+                chat.active_workflow = None
+                chat.current_step = 0
+                if hasattr(chat, "save"):
+                    try:
+                        chat.save(update_fields=["active_workflow", "current_step"])
+                    except Exception:
+                        pass
+        graph_node = new_graph_node
+    elif is_workflow_continuation:
+        graph_node = active_node
+    else:
+        # Новый независимый вопрос — сбрасываем залипший workflow
+        if active_node and chat:
+            logger.info(f"[WORKFLOW RESET] Запрос '{user_message}' не относится к '{active_node['id']}'. Сброс active_workflow.")
             chat.active_workflow = None
             chat.current_step = 0
             if hasattr(chat, "save"):
@@ -240,12 +264,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
                     chat.save(update_fields=["active_workflow", "current_step"])
                 except Exception:
                     pass
-        active_node = None
-        graph_node = new_graph_node
-    elif new_graph_node:
-        graph_node = new_graph_node
-    else:
-        graph_node = active_node
+        graph_node = None
 
     graph_context_text = ""
     if graph_node:
