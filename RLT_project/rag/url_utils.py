@@ -123,10 +123,10 @@ def normalize_portal_url(url: str) -> str:
         cms_id = m_cms.group(1)
         return f"https://zakupki.mos.ru/knowledgebase/article/details/cms/{cms_id}"
 
-    # 5. Официальные документы в CMS Media
-    if "cms/media/docs/" in url.lower():
+    # 5. Официальные документы в CMS Media / PDF инструкции
+    if "cms/media/docs/" in url.lower() or "knowledgebase/docs/" in url.lower() or url.lower().endswith(".pdf"):
         unquoted = urllib.parse.unquote(url)
-        filename = unquoted.split("docs/")[-1].strip()
+        filename = unquoted.split("/")[-1].strip()
         clean_filename = filename.replace("_", " ")
         encoded_name = urllib.parse.quote(clean_filename)
         return f"https://zakupki.mos.ru/cms/Media/docs/{encoded_name}"
