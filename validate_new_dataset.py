@@ -4,7 +4,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from collections import Counter
 
-DATASET_PATH = Path("/home/rama/ardont/knowledgebase_mos_ru/data/articles.json")
+DATASET_PATH = Path("dataset/articles.json")
 
 def clean_html(html_text: str) -> str:
     """Очищает HTML-теги для подачи чистого текста в LLM/эмбеддинги."""

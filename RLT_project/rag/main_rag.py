@@ -257,9 +257,7 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
 2. Обязательно укажи точные сроки и регламентные требования, если они есть в тексте.
 3. Укажи официальный канал (например, Портал поставщиков Москвы / ЕИС Закупки) и финансовые условия.
 4. Если в базе знаний описаны конкретные разделы личного кабинета, кнопки или пункты меню — выдели их кавычками или жирным шрифтом.
-5. В самом конце ответа ОБЯЗАТЕЛЬНО укажи первоисточник в формате:
-📖 **Источник:** [{primary_title}]({primary_url})
-СТРОЖАЙШИЙ ЗАПРЕТ: Ссылка должна вести исключительно на https://zakupki.mos.ru. Не придумывай никаких других ссылок.
+5. СТРОЖАЙШИЙ ЗАПРЕТ: НЕ придумывай и не вставляй в текст ответа ссылки (URL) самостоятельно. Официальные ссылки на первоисточники будут автоматически добавлены из базы знаний.
 """
 
     logger.debug(f"[LLM PROMPT] Длина промпта: {len(prompt)} символов")
@@ -285,9 +283,7 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
                 f"**Способ подачи:** {graph_node['channel']}\n\n"
                 f"**Стоимость:** {graph_node['fee']}\n\n"
                 f"**Регламентные сроки:**\n{deadlines_formatted}\n\n"
-                f"**Пошаговый порядок действий:**\n{steps_formatted}\n\n"
-                f"---\n"
-                f"📖 **Источник:** [{graph_node['title']}]({node_url})"
+                f"**Пошаговый порядок действий:**\n{steps_formatted}"
             )
         elif hits:
             main_source = citations[0] if citations else {"title": "Регламент Портала поставщиков", "url": "https://zakupki.mos.ru"}
@@ -297,37 +293,33 @@ def rag_pipeline(user_message: str, chat=None, category_filter: Optional[str] = 
             llm_answer = (
                 f"По вашему вопросу найдена официальная инструкция:\n\n"
                 f"📌 **{main_source['title']}**\n\n"
-                f"{body_text}\n\n"
-                f"---\n📖 **Источник:** [{main_source['title']}]({main_source.get('url', 'https://zakupki.mos.ru')})"
+                f"{body_text}"
             )
 
     # 7. СТРОГАЯ САНИТАРИЯ ССЫЛОК И ПОЛНОЕ ИСКЛЮЧЕНИЕ 404 / СТОРОННИХ РЕСУРСОВ
-    # Исключаем любые случайные упоминания Росэлторг
+    # Исключаем любые случайные упоминания сторонних площадок
     llm_answer = re.sub(r'росэлторг\w*', 'Портал поставщиков Москвы', llm_answer, flags=re.IGNORECASE)
 
-    # Допустимые URL из найденных документов
+    # Допустимые проверенные URL из найденных документов базы знаний
     valid_urls_set = {c['url'] for c in citations if c.get('url') and c['url'].startswith('https://zakupki.mos.ru')}
     valid_urls_set.add(primary_url)
-    valid_urls_set.add("https://zakupki.mos.ru/knowledgebase/main")
-    valid_urls_set.add("https://zakupki.mos.ru/knowledgebase/regulations")
 
+    # Очищаем любые ссылки внутри текста, если они не присутствуют в точном реестре найденных документов
     def _sanitize_md_link(match):
         text = match.group(1)
         url = match.group(2).strip()
-        # Если ссылка точь-в-точь из найденных валидных статей — оставляем
         if url in valid_urls_set:
             return f"[{text}]({url})"
-        # Если ссылка ведет на zakupki.mos.ru и имеет валидный паттерн статьи
-        if url.startswith("https://zakupki.mos.ru") and ("/knowledgebase/article/" in url or url.endswith("/knowledgebase/main") or url.endswith("/knowledgebase/regulations")):
-            return f"[{text}]({url})"
-        # Любая иная галлюцинированная ссылка подменяется на проверенный первоисточник
-        return f"[{text}]({primary_url})"
+        # Если ссылка не из проверенного набора, не оставляем битую ссылку — сохраняем чистый текст
+        return text
 
     llm_answer = re.sub(r'\[([^\]]+)\]\((https?://[^\)]+)\)', _sanitize_md_link, llm_answer)
 
-    # Проверяем наличие кликабельного источника в конце ответа
-    if "📖 **Источник:**" not in llm_answer and "Источник:" not in llm_answer:
-        llm_answer = llm_answer.strip() + f"\n\n📖 **Источник:** [{primary_title}]({primary_url})"
+    # Удаляем любой сгенерированный LLM хвост с источником, чтобы не дублировать и не допускать 404
+    llm_answer = re.sub(r'(\n|\r\n)*(-{3,}\s*)?(📖\s*)?\*{0,2}Источник:?\*{0,2}.*$', '', llm_answer, flags=re.IGNORECASE | re.DOTALL).strip()
+
+    # Вставляем гарантированно точный первоисточник НАПРЯМУЮ из метаданных
+    llm_answer = llm_answer.strip() + f"\n\n📖 **Источник:** [{primary_title}]({primary_url})"
 
     # 8. ОБЯЗАТЕЛЬНОЕ ПРЕДЛОЖЕНИЕ ПОШАГОВОГО WORKFLOW (ПРИОРИТЕТ 4)
     workflow_offer = "\n\nХотите я помогу вам пройти этот процесс по шагам?"

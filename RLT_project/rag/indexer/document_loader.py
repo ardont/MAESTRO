@@ -22,6 +22,7 @@ import os
 import re
 from pathlib import Path
 from typing import List, Dict, Any
+import urllib.parse
 
 try:
     from bs4 import BeautifulSoup
@@ -31,7 +32,10 @@ except ImportError:
 try:
     import PyPDF2
 except ImportError:
-    PyPDF2 = None
+    try:
+        import pypdf as PyPDF2
+    except ImportError:
+        PyPDF2 = None
 
 try:
     import docx
@@ -91,10 +95,13 @@ def load_articles_json(kb_path: Path) -> List[Dict[str, Any]]:
             if "закон" in title.lower() or "регламент" in title.lower() or "фз" in title.lower():
                 doc_type = "legislation"
 
+            # Используем точный сохраненный канонический URL из датасета
+            art_url = art.get("url") or f"https://zakupki.mos.ru/knowledgebase/article/details/ais/{art_id}"
+
             documents.append({
                 "text": clean_text,
                 "title": title,
-                "url": f"https://zakupki.mos.ru/knowledgebase/article/{art_id}",
+                "url": art_url,
                 "category": category,
                 "doc_type": doc_type,
                 "file_name": f"{art_id}.html",
@@ -135,11 +142,12 @@ def load_pdfs(kb_path: Path) -> List[Dict[str, Any]]:
             if len(full_text) > 100:
                 title = pdf_file.stem.replace("_", " ")
                 doc_type = "legislation" if "регламент" in title.lower() or "фз" in title.lower() else "instruction"
+                encoded_name = urllib.parse.quote(pdf_file.name)
                 
                 documents.append({
                     "text": full_text,
                     "title": title,
-                    "url": f"https://zakupki.mos.ru/knowledgebase/docs/{pdf_file.name}",
+                    "url": f"https://zakupki.mos.ru/cms/Media/docs/{encoded_name}",
                     "category": "official_docs",
                     "doc_type": doc_type,
                     "file_name": pdf_file.name,
@@ -175,11 +183,12 @@ def load_docx(kb_path: Path) -> List[Dict[str, Any]]:
             
             if len(full_text) > 100:
                 title = docx_file.stem.replace("_", " ")
+                encoded_name = urllib.parse.quote(docx_file.name)
                 
                 documents.append({
                     "text": full_text,
                     "title": title,
-                    "url": f"https://zakupki.mos.ru/knowledgebase/docs/{docx_file.name}",
+                    "url": f"https://zakupki.mos.ru/cms/Media/docs/{encoded_name}",
                     "category": "official_docs",
                     "doc_type": "instruction",
                     "file_name": docx_file.name,
@@ -195,9 +204,52 @@ def load_docx(kb_path: Path) -> List[Dict[str, Any]]:
     return documents
 
 
+def load_regulations_json(kb_path: Path) -> List[Dict[str, Any]]:
+    """Загружает разделы Регламента ведения портала из regulations.json"""
+    reg_file = kb_path / "data" / "regulations.json"
+    documents = []
+
+    if not reg_file.exists():
+        return documents
+
+    try:
+        with open(reg_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        for page in data.get("pages", []):
+            cid = page.get("contentItemId")
+            if not cid:
+                continue
+
+            html = page.get("content", {}).get("html", "")
+            clean_text = _clean_html(html)
+            if len(clean_text) < 50:
+                continue
+
+            title = page.get("displayText", "Регламент ведения портала").strip()
+            url = page.get("url") or f"https://zakupki.mos.ru/knowledgebase/article/details/cms/{cid}"
+
+            documents.append({
+                "text": clean_text,
+                "title": title,
+                "url": url,
+                "category": "regulations",
+                "doc_type": "legislation",
+                "file_name": f"{cid}.html",
+                "doc_id": f"reg_{cid}"
+            })
+
+        if documents:
+            print(f"[LOADER] Загружено {len(documents)} разделов Регламента из regulations.json")
+    except Exception as e:
+        print(f"[LOADER] Ошибка чтения {reg_file}: {e}")
+
+    return documents
+
+
 def load_all_documents(kb_path: str = DEFAULT_KB_PATH) -> List[Dict[str, Any]]:
     """
-    Загружает полный массив документов из нового датасета (JSON + PDF + DOCX).
+    Загружает полный массив документов из нового датасета (JSON + PDF + DOCX + Регламент).
     """
     path_obj = Path(kb_path)
     print(f"[LOADER] Начинаю загрузку базы знаний из: {path_obj}")
@@ -207,10 +259,13 @@ def load_all_documents(kb_path: str = DEFAULT_KB_PATH) -> List[Dict[str, Any]]:
     # 1. Текстовые статьи
     documents.extend(load_articles_json(path_obj))
     
-    # 2. PDF инструкции
+    # 2. Регламент портала (CMS)
+    documents.extend(load_regulations_json(path_obj))
+    
+    # 3. PDF инструкции
     documents.extend(load_pdfs(path_obj))
     
-    # 3. DOCX инструкции
+    # 4. DOCX инструкции
     documents.extend(load_docx(path_obj))
     
     print(f"[LOADER] Итого подготовлено {len(documents)} документов для индексатора.")
