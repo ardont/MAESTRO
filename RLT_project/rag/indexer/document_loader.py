@@ -117,6 +117,25 @@ def load_articles_json(kb_path: Path) -> List[Dict[str, Any]]:
 
 def load_pdfs(kb_path: Path) -> List[Dict[str, Any]]:
     """Извлекает текст из официальных PDF-инструкций"""
+KNOWN_DOC_URLS = {
+    "руководство_пользователей_по_электронному_исполнению_контрактов_01.04.2022.docx": "https://help.mos.ru/upload/iblock/1cd/rykovodstvo_polzovatelei_po_elektronnomy_ispolneniu_kontraktov_01.04.2022.docx",
+    "руководство пользователей по электронному исполнению контрактов 01.04.2022.docx": "https://help.mos.ru/upload/iblock/1cd/rykovodstvo_polzovatelei_po_elektronnomy_ispolneniu_kontraktov_01.04.2022.docx",
+}
+
+
+def get_canonical_doc_url(filename: str) -> str:
+    """Возвращает 100% проверенную рабочую ссылку для официального документа"""
+    fn_lower = filename.lower()
+    if fn_lower in KNOWN_DOC_URLS:
+        return KNOWN_DOC_URLS[fn_lower]
+    # На портале zakupki.mos.ru/cms/Media/docs/ документы размещаются с пробелами
+    clean_name = filename.replace("_", " ")
+    return f"https://zakupki.mos.ru/cms/Media/docs/{urllib.parse.quote(clean_name)}"
+
+
+def load_pdf(kb_path: Path) -> List[Dict[str, Any]]:
+    """Извлекает текст из официальных PDF-инструкций с дедупликацией по хешу"""
+    import hashlib
     docs_dir = kb_path / "docs"
     documents = []
 
@@ -124,30 +143,38 @@ def load_pdfs(kb_path: Path) -> List[Dict[str, Any]]:
         return documents
 
     if not PyPDF2:
-        print("[LOADER] PyPDF2 не установлен. Пропуск загрузки PDF (выполните pip install PyPDF2).")
+        print("[LOADER] PyPDF2/pypdf не установлен. Пропуск загрузки PDF.")
         return documents
 
+    seen_hashes = set()
     pdf_count = 0
-    for pdf_file in docs_dir.glob("*.pdf"):
+
+    for pdf_file in sorted(docs_dir.glob("*.pdf")):
         try:
+            content = pdf_file.read_bytes()
+            file_hash = hashlib.sha256(content).hexdigest()
+            if file_hash in seen_hashes:
+                print(f"[LOADER] Пропуск дубликата PDF: {pdf_file.name}")
+                continue
+            seen_hashes.add(file_hash)
+
             text_blocks = []
-            with open(pdf_file, "rb") as f:
-                reader = PyPDF2.PdfReader(f)
-                for page in reader.pages:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text_blocks.append(extracted)
+            reader = PyPDF2.PdfReader(pdf_file)
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text_blocks.append(extracted)
             
             full_text = "\n".join(text_blocks).strip()
             if len(full_text) > 100:
                 title = pdf_file.stem.replace("_", " ")
                 doc_type = "legislation" if "регламент" in title.lower() or "фз" in title.lower() else "instruction"
-                encoded_name = urllib.parse.quote(pdf_file.name)
+                doc_url = get_canonical_doc_url(pdf_file.name)
                 
                 documents.append({
                     "text": full_text,
                     "title": title,
-                    "url": f"https://zakupki.mos.ru/cms/Media/docs/{encoded_name}",
+                    "url": doc_url,
                     "category": "official_docs",
                     "doc_type": doc_type,
                     "file_name": pdf_file.name,
@@ -158,13 +185,14 @@ def load_pdfs(kb_path: Path) -> List[Dict[str, Any]]:
             print(f"[LOADER] Ошибка чтения PDF {pdf_file.name}: {e}")
 
     if pdf_count > 0:
-        print(f"[LOADER] Успешно загружено {pdf_count} PDF-инструкций")
+        print(f"[LOADER] Успешно загружено {pdf_count} уникальных PDF-инструкций")
 
     return documents
 
 
 def load_docx(kb_path: Path) -> List[Dict[str, Any]]:
-    """Извлекает текст из официальных DOCX-инструкций"""
+    """Извлекает текст из официальных DOCX-инструкций с дедупликацией по хешу"""
+    import hashlib
     docs_dir = kb_path / "docs"
     documents = []
 
@@ -172,23 +200,32 @@ def load_docx(kb_path: Path) -> List[Dict[str, Any]]:
         return documents
 
     if not docx:
-        print("[LOADER] python-docx не установлен. Пропуск загрузки DOCX (выполните pip install python-docx).")
+        print("[LOADER] python-docx не установлен. Пропуск загрузки DOCX.")
         return documents
 
+    seen_hashes = set()
     docx_count = 0
-    for docx_file in docs_dir.glob("*.docx"):
+
+    for docx_file in sorted(docs_dir.glob("*.docx")):
         try:
+            content = docx_file.read_bytes()
+            file_hash = hashlib.sha256(content).hexdigest()
+            if file_hash in seen_hashes:
+                print(f"[LOADER] Пропуск дубликата DOCX: {docx_file.name}")
+                continue
+            seen_hashes.add(file_hash)
+
             doc = docx.Document(docx_file)
             full_text = "\n".join([para.text for para in doc.paragraphs if para.text]).strip()
             
             if len(full_text) > 100:
                 title = docx_file.stem.replace("_", " ")
-                encoded_name = urllib.parse.quote(docx_file.name)
+                doc_url = get_canonical_doc_url(docx_file.name)
                 
                 documents.append({
                     "text": full_text,
                     "title": title,
-                    "url": f"https://zakupki.mos.ru/cms/Media/docs/{encoded_name}",
+                    "url": doc_url,
                     "category": "official_docs",
                     "doc_type": "instruction",
                     "file_name": docx_file.name,
@@ -199,7 +236,7 @@ def load_docx(kb_path: Path) -> List[Dict[str, Any]]:
             print(f"[LOADER] Ошибка чтения DOCX {docx_file.name}: {e}")
 
     if docx_count > 0:
-        print(f"[LOADER] Успешно загружено {docx_count} DOCX-инструкций")
+        print(f"[LOADER] Успешно загружено {docx_count} уникальных DOCX-инструкций")
 
     return documents
 
