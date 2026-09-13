@@ -95,7 +95,7 @@ def classify_workflow_intent(command: str, active: bool = False) -> str:
     words = c.split()
     
     # 1. Запрос оператора / человека
-    if re.search(r'\b(оператор|человек|специалист|позови|переведи на|живой)\b', c):
+    if re.search(r'\b(оператор|человек|специалист|позови|переведи на|живой|позовите|свяжи|соедини)\b', c):
         return "OPERATOR"
 
     # 2. Остановка / отказ
@@ -103,13 +103,17 @@ def classify_workflow_intent(command: str, active: bool = False) -> str:
         if len(words) <= 4:
             return "STOP"
 
-    # 3. Сбой / Проблема на шаге
+    # 3. Сбой / Проблема на шаге / Непонимание и тупик
     failure_patterns = [
         r'\b(не помогл\w*|ошибк\w* остал\w*|вс[её] равно ошибк\w*|пишет 500|пишет ошибк\w*)\b',
         r'\b(выдает ошибк\w*|выда[её]т ту же|нет так\w* кнопк\w*|не нажима\w*|не работа\w*)\b',
         r'\b(не получ\w*|не наш[её]л|не могу найти|завис\w*|страниц\w* недоступн\w*|не открыва\w*)\b',
         r'\b(белый экран|сбой|ничего не изменил\w*|та же проблема|то же самое|вс[её] так же)\b',
-        r'\b(500|internal server error|не удалось|не пускает|не грузит)\b'
+        r'\b(500|internal server error|не удалось|не пускает|не грузит)\b',
+        # Непонимание, путаница, бессилие, опечатки (ничего не понимаю/панимаю/не панимаю)
+        r'\b(ничего\s+не\s+п[ао]ним\w*|ничего\s+не\s+пон[яе]\w*|не\s+п[ао]ним\w*|не\s+п[ао]нятн\w*)\b',
+        r'\b(ничего\s+не\s+выход\w*|не\s+выход\w*|не\s+могу|не\s+умею|не\s+разбер\w*|не\s+разбира\w*)\b',
+        r'\b(запутал\w*|сложно|слишком\s+сложно|не\s+знаю\s+что\s+делать|помогите|не\s+справлюсь)\b'
     ]
     for pat in failure_patterns:
         if re.search(pat, c):
@@ -323,10 +327,13 @@ def handle_workflow(message: str, chat: Any) -> Optional[Dict[str, Any]]:
         "badge_color": wf_info.get("badge_color", "#0284c7")
     }
 
+    wf_images = node.get("images", [])
+    step_img = [wf_images[step]] if (wf_images and step < len(wf_images)) else (wf_images[:1] if wf_images else [])
+
     return {
         "answer": result["reply"],
         "citations": citations,
-        "images": [],
+        "images": step_img,
         "line_info": line_info,
         "active_workflow": chat.active_workflow,
         "current_step": chat.current_step

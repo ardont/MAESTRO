@@ -261,6 +261,47 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     if workflow_result is not None:
         return workflow_result
 
+    # Проверка на прямой запрос оператора / человека вне активного workflow
+    if re.search(r'\b(оператор|позови\w*\s+оператор\w*|переведи\w*\s+на\s+оператор\w*|соедини\w*\s+с\s+оператор\w*|нужен\s+оператор|живой\s+человек|позовите\s+оператор\w*|свяжи\w*\s+с\s+оператор\w*)\b', user_message.lower()):
+        ticket_id = generate_ticket_id(getattr(chat, "id", None))
+        line_info = determine_support_line(user_message, current_line="L1")
+        operator_card = build_operator_context_card(
+            ticket_id=ticket_id,
+            issue=f"Запрос подключения специалиста поддержки: «{user_message}»",
+            line_info=line_info,
+            checkpoints=["Пользователь запросил подключение специалиста поддержки в чате"],
+            error_code="500" if "500" in user_message else None
+        )
+        if chat:
+            try:
+                from chat.models import User
+                support_agent = User.objects.filter(role="support_staff", is_active=True).first()
+                if not support_agent:
+                    support_agent = User.objects.create(role="support_staff", is_active=True)
+                chat.assigned_to = support_agent
+            except Exception as e:
+                logger.warning(f"Не удалось назначить сотрудника: {e}")
+            if hasattr(chat, "save"):
+                try:
+                    chat.save(update_fields=["assigned_to"])
+                except Exception:
+                    pass
+        reply_text = format_escalation_reply(ticket_id, line_info, checkpoints=[], reason=user_message)
+        return {
+            "event": LLM_NEED_OPERATOR_EVENT,
+            "answer": reply_text,
+            "citations": [],
+            "images": [],
+            "line_info": {
+                "line": line_info["routed_line"],
+                "name": line_info["routed_line_name"],
+                "badge_color": line_info.get("badge_color", "#2563eb")
+            },
+            "operator_card": operator_card,
+            "active_workflow": None,
+            "current_step": 0
+        }
+
     # Мгновенная проверка на очевидный оффтопик (бытовые темы, рецепты, погода, игры) — 0 мс задержки
     OFF_TOPIC_STOP_WORDS = [
         "омлет", "рецепт", "сварить", "приготовить", "пицц", "борщ", "суп", "салат", "погод",
@@ -364,17 +405,19 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         active_step_text = steps[active_step_idx] if steps else ""
 
         msg_l = user_message.lower().strip()
-        step_words = ["дальше", "далее", "следующ", "продолж", "потом", "шаг", "второй", "третий", "четверт", "давай", "ок", "понял"]
+        step_words = ["дальше", "далее", "следующ", "продолж", "потом", "шаг", "второй", "третий", "четверт", "давай", "ок"]
         clarify_words = [
             "подробн", "расскаж", "раскаж", "поясн", "объясн", "уточн", "как именно", "как это",
-            "что это", "в смысле", "детали", "где найти", "не понял", "не поняла", "что значит"
+            "что это", "в смысле", "детали", "где найти", "что значит"
         ]
+        failure_words = ["не понима", "не панима", "не получ", "не выход", "запутал", "не помог", "ошибк", "сложно", "оператор"]
+        has_failure_intent = any(w in msg_l for w in failure_words)
         has_step_intent = any(w in msg_l for w in step_words)
         has_clarify_intent = any(w in msg_l for w in clarify_words) or ("?" in msg_l and len(msg_l.split()) <= 12)
         has_node_keywords = any(kw in msg_l for kw in active_node.get("keywords", []))
 
         # Если вопрос связан с активным регламентом или является уточнением по текущему шагу
-        if has_step_intent or has_node_keywords or has_clarify_intent or (new_graph_node is None and len(msg_l.split()) <= 8):
+        if not has_failure_intent and (has_step_intent or has_node_keywords or has_clarify_intent or (new_graph_node is None and len(msg_l.split()) <= 8)):
             is_workflow_continuation = True
             if has_clarify_intent or (not has_step_intent and not has_node_keywords):
                 is_workflow_clarification = True
@@ -554,6 +597,10 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
             "section": "Нормативно-правовая база",
             "url": graph_url
         })
+        if graph_node and graph_node.get("images"):
+            for img in graph_node["images"]:
+                if img not in images:
+                    images.append(img)
 
     for hit in hits:
         payload = hit.payload or {}
@@ -649,7 +696,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     chat_history_text = ""
     if is_workflow_clarification and active_node:
         chat_history_text = (
-            f"Пользователь проходит пошаговый процесс «{active_node['title']}» и сейчас находится на шаге {active_step_idx + 1}: «{active_step_text}».\n"
+            f"Пользователь проходит пошаговый процесс «{active_node['title']}», текущий шаг {active_step_idx + 1}: «{active_step_text}».\n"
             f"Пользователь попросил разъяснить этот шаг: «{user_message}».\n"
             "ТРЕБОВАНИЕ: Дай подробное, исчерпывающее и понятное практическое разъяснение именно этого шага на основе базы знаний. "
             "НЕ начинай процесс с первого шага и НЕ переходи к следующему шагу самостоятельно. "
@@ -895,9 +942,6 @@ async def rag_pipeline(
         except Exception as exc:
             await queue.put(("error", exc))
 
-    if user_message.strip().lower() == "оператор":
-        yield LLMNeedOperatorEvent(user_query=user_message, data='Запрос был передан оператору')
-        return
     worker = asyncio.create_task(run())
     try:
         while True:
