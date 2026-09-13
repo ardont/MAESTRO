@@ -56,13 +56,13 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         line_500 = determine_support_line("Что делать при ошибке 500 на сервере?")
         self.assertEqual(line_500["routed_line"], "L2", "L3-проблема должна направляться на L2!")
         self.assertTrue(line_500["needs_l3_confirmation"], "Должен быть выставлен флаг подтверждения 3-й линии!")
-        self.assertIn("3-я линия", line_500["target_specialist"])
+        self.assertIn("3-й линии", line_500["target_specialist"])
 
         # 3. Формирование ответа пользователю
         reply = format_escalation_reply(ticket, line_500, ["[✗] Шаг 1: Ошибка 500 сохраняется"])
         self.assertIn(ticket, reply)
-        self.assertIn("2-ю линию технической поддержки", reply)
-        self.assertIn("специалистов 3-й линии", reply)
+        self.assertIn("2-й линии технической поддержки", reply)
+        self.assertIn("3-ю линию", reply)
         self.assertIn("чек-лист диагностики", reply.lower())
 
         # 4. Формирование Context Card оператора
@@ -104,6 +104,13 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertEqual(classify_workflow_intent("позови человека"), "OPERATOR")
         self.assertEqual(classify_workflow_intent("оператор"), "OPERATOR")
 
+        # Уточняющий вопрос / Просьба пояснить (CLARIFY)
+        self.assertEqual(classify_workflow_intent("раскажи подробнее"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("расскажи подробнее"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("подробнее"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("поясни этот шаг"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("не понял"), "CLARIFY")
+
     def test_agent2_step_advancement_and_checklist(self):
         """Агент 2: Пошаговое продвижение с сохранением [✓] в чек-лист."""
         self.chat.context_cache = {'suggested_workflow': 'ecp_cryptopro'}
@@ -114,6 +121,8 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertIn("Шаг 1 из", res1["answer"])
         self.assertEqual(self.chat.active_workflow, "ecp_cryptopro")
         self.assertEqual(self.chat.current_step, 1)
+        # Проверяем чистое каноническое название статьи в цитате
+        self.assertEqual(res1["citations"][0]["title"], "Как произвести настройку плагина КРИПТОПРО?")
 
         # Шаг 2 (пользователь написал "сделал")
         res2 = handle_workflow("сделал, всё получилось", self.chat)
@@ -138,8 +147,8 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         # Проверяем, что сработала эскалация (Агент 3)
         self.assertIn("официально зарегистрировано", res["answer"])
         self.assertIn("INC-2026-", res["answer"])
-        self.assertIn("2-ю линию технической поддержки", res["answer"])
-        self.assertIn("специалистов 3-й линии", res["answer"])
+        self.assertIn("2-й линии технической поддержки", res["answer"])
+        self.assertIn("3-ю линию", res["answer"])
         
         # Маршрутизация на L2 (не напрямую на L3!)
         self.assertEqual(res["line_info"]["line"], "L2")
@@ -160,6 +169,7 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         node = find_graph_node("Закупки малого объема до 3 млн рублей по 223-ФЗ")
         self.assertIsNotNone(node)
         self.assertEqual(node["id"], "zmo_procurement_rules")
+        self.assertEqual(node["title"], "Что такое закупки малого объема (ЗМО) на Портале поставщиков?")
         self.assertIn("589954", node["url"])
         self.assertIn("44-ФЗ", str(node["law_references"]))
         self.assertIn("223-ФЗ", str(node["law_references"]))
@@ -203,7 +213,8 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertIsNotNone(node_arb)
         self.assertEqual(node_arb["id"], "portal_complaint_arbitration")
         self.assertIn("507199", node_arb["url"])
-        self.assertIn("Арбитраж", node_arb["title"])
+        self.assertEqual(node_arb["title"], "Как обжаловать блокировку на Портале поставщиков?")
+        self.assertIn("Арбитраж", str(node_arb["law_references"]))
 
         # 3. Точные названия приложений Регламента CMS
         cms_app8_url = "https://zakupki.mos.ru/knowledgebase/article/details/cms/4n50757tk43h15gxn22r5655d9"
@@ -219,6 +230,160 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         title_reg = clean_citation_title("Подача жалобы в ФАС", reg_url)
         self.assertEqual(title_reg, "Регламент информационного взаимодействия АИС «Портал поставщиков»")
 
+    def test_workflow_clarification_and_continuation(self):
+        """Проверка: уточнение на шаге регламента ('раскажи подробнее') не сбрасывает процесс и дает верную цитату."""
+        self.chat.active_workflow = "zmo_procurement_rules"
+        self.chat.current_step = 3
+        self.chat.context_cache = {"suggested_workflow": "zmo_procurement_rules"}
+
+        # 1. Пользователь на шаге 3 пишет "раскажи подробнее"
+        intent = classify_workflow_intent("раскажи подробнее", active=True)
+        self.assertEqual(intent, "CLARIFY")
+
+        # handle_workflow передает управление в RAG без сброса активного workflow
+        wf_res = handle_workflow("раскажи подробнее", self.chat)
+        self.assertIsNone(wf_res)
+        self.assertEqual(self.chat.active_workflow, "zmo_procurement_rules")
+        self.assertEqual(self.chat.current_step, 3)
+
+        # 2. После получения ответа пользователь пишет "далее"
+        intent_next = classify_workflow_intent("далее", active=True)
+        self.assertEqual(intent_next, "ADVANCE")
+
+        # handle_workflow продвигает на шаг 4
+        wf_next = handle_workflow("далее", self.chat)
+        self.assertIsNotNone(wf_next)
+        self.assertIn("Шаг 4 из 5", wf_next["answer"])
+        self.assertEqual(self.chat.current_step, 4)
+
+        # 3. Название статьи в цитатах пошагового регламента строго каноническое
+        self.assertEqual(len(wf_next["citations"]), 1)
+        self.assertEqual(wf_next["citations"][0]["title"], "Что такое закупки малого объема (ЗМО) на Портале поставщиков?")
+        self.assertIn("589954", wf_next["citations"][0]["url"])
+
+    def test_out_of_kb_portal_query_triggers_agent3_escalation(self):
+        """Проверка кейса 'Банан': сущность отсутствует в БЗ Портала -> мгновенная эскалация с тикетом и БЕЗ ложных цитат."""
+        from rag.main_rag import rag_pipeline_result
+
+        class MockHit:
+            def __init__(self, title, section_header, text, score=0.25, url="https://zakupki.mos.ru/knowledgebase/article/details/ais/507178"):
+                self.score = score
+                self.payload = {
+                    "title": title,
+                    "section_header": section_header,
+                    "text": text,
+                    "url": url,
+                    "images": []
+                }
+
+        # Имитируем ситуацию, когда семантический поиск вернул нерелевантную статью о блокировке поставщика
+        mock_hits = [
+            MockHit(
+                title="Если поставщик заблокирован на Портале поставщиков, будет ли он внесен в реестр недобросовестных поставщиков?",
+                section_header="Блокировка",
+                text="Информация о блокировке учетной записи поставщика на Портале поставщиков Москвы.",
+                score=0.25
+            )
+        ]
+
+        with patch("rag.search.search_hybrid", return_value=mock_hits), \
+             patch("rag.main_rag._call_local_gpt", return_value="ON_TOPIC"):
+            res = rag_pipeline_result(
+                "что такое банан и будет ли он продаваться на портале поставщиков",
+                chat=self.chat
+            )
+
+        # 1. Ответ содержит официальную регистрацию обращения (тикет)
+        self.assertIn("официально зарегистрировано", res["answer"])
+        self.assertIn("INC-2026-", res["answer"])
+        self.assertIn("1-й линии общей поддержки", res["answer"])
+        self.assertIn("нет регламентированной информации", res["answer"])
+
+        # 2. Ложные цитаты (статья о блокировке) ПОЛНОСТЬЮ исключены
+        self.assertEqual(res["citations"], [], "Для вопроса вне базы знаний цитаты должны быть пустыми!")
+
+        # 3. Карточка оператора сформирована
+        card = res.get("operator_card")
+        self.assertIsNotNone(card)
+        self.assertEqual(card["assigned_line"], "L1")
+        self.assertIn("банан", card["issue"])
+
+        # 4. Чат назначен на сотрудника
+        self.assertEqual(self.chat.assigned_to, "support_staff")
+
+    def test_pure_off_topic_polite_refusal(self):
+        """Проверка чистого оффтопика ('как испечь пирог'): вежливый отказ без ложных цитат и без тикета."""
+        from rag.main_rag import rag_pipeline_result
+
+        with patch("rag.main_rag._call_local_gpt", return_value="OFF_TOPIC"):
+            res = rag_pipeline_result(
+                "как испечь яблочный пирог",
+                chat=self.chat
+            )
+
+        self.assertEqual(res["citations"], [])
+        self.assertIn("другой сфере", res["answer"])
+        # Тикет не создается при оффтопике
+        self.assertNotIn("INC-2026-", res["answer"])
+
+    def test_pdf_citation_extraction_and_linking(self):
+        """Проверка извлечения прямых ссылок на официальные PDF-инструкции из метаданных чанка."""
+        from rag.url_utils import extract_pdf_citation, clean_citation_section
+
+        # 1. Тестируем прямое извлечение из percent-encoded section_header
+        sec_encoded = "Введение > Содержимое документа (%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%86%D0%B8%D1%8F_%D0%BF%D0%BE_%D1%80%D0%B5%D0%B3%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D0%B8_%D0%BD%D0%B0_%D0%9F%D0%BE%D1%80%D1%82%D0%B0%D0%BB%D0%B5.pdf): (Часть 1)"
+        pdf_cit = extract_pdf_citation(sec_encoded)
+        self.assertIsNotNone(pdf_cit)
+        self.assertEqual(pdf_cit["title"], "Инструкция по регистрации на Портале")
+        self.assertIn("https://zakupki.mos.ru/cms/Media/docs/", pdf_cit["url"])
+        self.assertIn("%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%86%D0%B8%D1%8F", pdf_cit["url"])
+        self.assertEqual(pdf_cit["section"], "Официальный документ (PDF)")
+
+        # 2. Тестируем очистку section_header
+        clean_sec = clean_citation_section(sec_encoded)
+        self.assertEqual(clean_sec, "Введение > Инструкция по регистрации на Портале")
+
+    def test_support_lines_matrix_classification(self):
+        """Проверка распределения по линиям поддержки: бот строго возвращает L1 или L2."""
+        from rag.router import route_support_line
+
+        # 1. Линия 1 (L1) — Общая поддержка: закупки, ЗМО по 223-ФЗ и 44-ФЗ, регистрация, СТЕ, финансы
+        self.assertEqual(route_support_line("Закупки малого объема до 3 млн рублей по 223-ФЗ")["line"], "L1")
+        self.assertEqual(route_support_line("Как зарегистрироваться поставщику в ЕИС и ЕРУЗ?")["line"], "L1")
+        self.assertEqual(route_support_line("Как добавить позицию в каталог СТЕ?")["line"], "L1")
+        self.assertEqual(route_support_line("Кто признается победителем котировочной сессии?")["line"], "L1")
+        self.assertEqual(route_support_line("Как получить независимую банковскую гарантию?")["line"], "L1")
+        self.assertEqual(route_support_line("Как подать жалобу в ФАС по 44-ФЗ?")["line"], "L1")
+
+        # 2. Линия 2 (L2) — Техническая поддержка: ЭЦП, КриптоПро, МЧД, УПД, браузеры, технические ошибки
+        self.assertEqual(route_support_line("Как настроить плагин КриптоПро для работы на Портале?")["line"], "L2")
+        self.assertEqual(route_support_line("Не удается подписать документ электронной подписью")["line"], "L2")
+        self.assertEqual(route_support_line("Как сформировать и подписать УПД при электронном актировании?")["line"], "L2")
+        self.assertEqual(route_support_line("Как добавить машиночитаемую доверенность (МЧД)?")["line"], "L2")
+        self.assertEqual(route_support_line("Что делать при ошибке РДИК_1074?")["line"], "L2")
+        self.assertEqual(route_support_line("Ошибка 500 на сервере при переходе в корзину")["line"], "L2")
+
+    def test_resolve_image_url_mapping(self):
+        """Проверка резолвинга изображений: валидные ссылки переводятся в /media/..., битые отсекаются."""
+        from rag.main_rag import resolve_image_url
+
+        # 1. Известное изображение из media_map, существующее на диске
+        resolved = resolve_image_url("https://help.mos.ru/uploads/blobid1(208).png")
+        self.assertIsNotNone(resolved)
+        self.assertTrue(resolved.startswith("/media/"))
+        self.assertTrue(resolved.endswith(".png"))
+
+        # 2. Относительный путь /uploads/
+        resolved_rel = resolve_image_url("/uploads/blobid1(208).png")
+        self.assertIsNotNone(resolved_rel)
+        self.assertTrue(resolved_rel.startswith("/media/"))
+
+        # 3. Несуществующее изображение -> возвращает None (исключает битые ссылки)
+        missing = resolve_image_url("https://help.mos.ru/uploads/non_existing_random_screenshot_99999.png")
+        self.assertIsNone(missing)
+
 
 if __name__ == '__main__':
     unittest.main()
+
+

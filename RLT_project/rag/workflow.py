@@ -14,6 +14,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from .events import LLM_NEED_OPERATOR_EVENT
 from .graph_rag import PROCUREMENT_KNOWLEDGE_GRAPH, get_workflow_step_response, find_graph_node
+from .url_utils import clean_citation_title
 from .escalation import (
     generate_ticket_id,
     determine_support_line,
@@ -114,13 +115,21 @@ def classify_workflow_intent(command: str, active: bool = False) -> str:
         if re.search(pat, c):
             return "FAILURE"
 
-    # 4. Согласие начать (START / AFFIRMATIVE): давай, по шагам, ок давай, начнем, да, хочу
+    # 4. Уточняющий вопрос / просьба пояснить (CLARIFY)
+    clarify_patterns = [
+        r'\b(подробн\w*|ра[сc]скажи\w*|поясн\w*|объясн\w*|не\s*поня\w*|уточн\w*|что\s+это\s+значит)\b',
+        r'\b(как\s+это\s+сдела\w*|в\s+смысле|а\s+конкретнее|детали|где\s+найти|какой\s+каталог)\b'
+    ]
+    if "?" in c or any(re.search(pat, c) for pat in clarify_patterns) or re.search(r'^(где|как|куда|что|почему|зачем|а если)\b', c):
+        return "CLARIFY"
+
+    # 5. Согласие начать (START / AFFIRMATIVE): давай, по шагам, ок давай, начнем, да, хочу
     if re.search(r'\b(давай|давайте|по\s*шагам|пошагов\w*|пройд[её]м\w*|начн[её]м|начать|погнали|поехали)\b', c) and len(words) <= 6:
         return "AFFIRMATIVE"
     if re.match(r'^(да|готов|согласен|хочу|помоги)\b', c) and len(words) <= 4:
         return "AFFIRMATIVE"
 
-    # 5. Успех / Переход дальше (ADVANCE): далее, дальше, готово, сделал, следующий, ок
+    # 6. Успех / Переход дальше (ADVANCE): далее, дальше, готово, сделал, следующий, ок, понял
     advance_patterns = [
         r'\b(далее|дальше|готов[оа]?|сделал[оа]?|продолж\w*|следующ\w*|впер[её]д|ид[её]м дальше|поня[лт])\b',
         r'^(ок|хорошо|сделано|готово|перешел|перешла|выполнил[а]?|получилось)$'
@@ -130,10 +139,6 @@ def classify_workflow_intent(command: str, active: bool = False) -> str:
             return "ADVANCE"
     if re.match(r'^(ок|хорошо)\b', c) and len(words) <= 2:
         return "AFFIRMATIVE" if not active else "ADVANCE"
-
-    # 6. Уточняющий вопрос
-    if "?" in c or re.search(r'^(где|как|куда|что|почему|зачем|а если)\b', c):
-        return "CLARIFY"
 
     return "UNKNOWN"
 
@@ -180,8 +185,9 @@ def handle_workflow(message: str, chat: Any) -> Optional[Dict[str, Any]]:
 
     citations = []
     if node.get("url"):
+        clean_title = clean_citation_title(node.get("title", "Официальный регламент"), node.get("url", ""))
         citations.append({
-            "title": node.get("title", "Официальный регламент"),
+            "title": clean_title,
             "section": f"Пошаговый регламент (Шаг {step + 1} из {total_steps})",
             "url": node.get("url")
         })

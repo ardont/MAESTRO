@@ -70,24 +70,88 @@ import html
 def clean_citation_section(section: str) -> str:
     """
     Очищает заголовок подраздела от технического мусора:
+    - Декодирует URL-encoded символы (%D0%...)
     - Удаляет SOURCE URL: ...
     - Удаляет технические индексы чанкера (Часть N)
+    - Преобразует Содержимое документа (X.pdf) в Инструкция: X
     - Удаляет дублирование и мусорные префиксы
     - Преобразует HTML-сущности (&quot;, &amp;)
     """
     if not section or not isinstance(section, str):
         return ""
 
-    s = html.unescape(section).strip()
+    try:
+        s = urllib.parse.unquote(section)
+    except Exception:
+        s = section
+
+    s = html.unescape(s).strip()
     s = re.sub(r'SOURCE\s+URL:\s*https?://\S+', '', s, flags=re.IGNORECASE).strip()
     s = re.sub(r'https?://\S+', '', s).strip()
     s = re.sub(r'\s*\(Часть\s*\d+\)', '', s, flags=re.IGNORECASE).strip()
     s = re.sub(r'Часть\s*\d+', '', s, flags=re.IGNORECASE).strip()
+
+    m_doc = re.search(r'Содержимое документа\s*\(([^)]+)\)', s, re.IGNORECASE)
+    if m_doc:
+        doc_name = m_doc.group(1).replace("_", " ").strip()
+        doc_name = re.sub(r'\.(pdf|docx)$', '', doc_name, flags=re.IGNORECASE).strip()
+        pref = "" if doc_name.lower().startswith(("инструкция", "регламент", "руководство", "положение")) else "Инструкция: "
+        s = re.sub(r'Содержимое документа\s*\([^)]+\)', f"{pref}{doc_name}", s, flags=re.IGNORECASE)
+
     s = s.strip(" -:—|()>")
 
     if not s or s.lower() in {"введение", "главная", "документ"}:
         return ""
     return s
+
+
+def extract_pdf_citation(section_header: str = "", text: str = "", raw_url: str = "") -> Optional[Dict[str, str]]:
+    """
+    Извлекает прямую ссылку на официальный PDF/DOCX документ из метаданных чанка базы знаний.
+    """
+    candidate_name = None
+    if raw_url and (".pdf" in raw_url.lower() or ".docx" in raw_url.lower() or "cms/media/docs/" in raw_url.lower()):
+        unquoted = urllib.parse.unquote(raw_url)
+        candidate_name = unquoted.split("/")[-1].strip()
+
+    if not candidate_name and section_header:
+        try:
+            unquoted_sec = urllib.parse.unquote(section_header)
+        except Exception:
+            unquoted_sec = section_header
+        
+        m_doc = re.search(r'Содержимое документа\s*\(([^)]+?\.(?:pdf|docx))\)', unquoted_sec, re.IGNORECASE)
+        if m_doc:
+            candidate_name = m_doc.group(1).strip()
+        else:
+            m_any = re.search(r'([a-zA-Zа-яА-ЯёЁ0-9_\-\.\s%]+?\.(?:pdf|docx))', unquoted_sec, re.IGNORECASE)
+            if m_any:
+                candidate_name = m_any.group(1).strip()
+
+    if not candidate_name and text:
+        m_txt = re.search(r'(?:файл|документ|инструкци\w*|регламент)[:\s]+([^\n\r()<>"]+?\.(?:pdf|docx))', text[:400], re.IGNORECASE)
+        if m_txt:
+            candidate_name = m_txt.group(1).strip()
+
+
+    if candidate_name:
+        fname = os.path.basename(candidate_name).strip()
+        clean_name = re.sub(r'\.(pdf|docx)$', '', fname, flags=re.IGNORECASE).replace("_", " ").strip()
+        clean_name = html.unescape(clean_name)
+        unq = urllib.parse.unquote(fname)
+        encoded_name = urllib.parse.quote(unq.replace("_", " "))
+        pdf_url = f"https://zakupki.mos.ru/cms/Media/docs/{encoded_name}"
+
+        title = clean_name
+        if not title.lower().startswith(("инструкция", "регламент", "руководство", "положение")):
+            title = f"Инструкция: {clean_name}"
+        return {
+            "title": title,
+            "section": "Официальный документ (PDF)",
+            "url": pdf_url
+        }
+    return None
+
 
 
 # Реестр разделов и приложений Регламента информационного взаимодействия АИС «Портал поставщиков»

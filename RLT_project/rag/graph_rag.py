@@ -48,7 +48,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     },
     "portal_complaint_arbitration": {
         "id": "portal_complaint_arbitration",
-        "title": "Как обжаловать блокировку и направить жалобу в Арбитражную комиссию Портала поставщиков",
+        "title": "Как обжаловать блокировку на Портале поставщиков?",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/507199",
         "keywords": [
             "обжаловать блокировку", "жалоба на блокировку", "жалобы на блокировку", "реестр жалоб",
@@ -256,7 +256,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     },
     "system_error_troubleshooting": {
         "id": "system_error_troubleshooting",
-        "title": "Действия при ошибке 500 и сбое в работе Подсистемы",
+        "title": "Необходимые действия при сбое в работе Подсистемы",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/235772",
         "keywords": [
             "ошибка 500", "500", "internal server error", "сбой подсистемы", "сбой в работе",
@@ -280,7 +280,7 @@ PROCUREMENT_KNOWLEDGE_GRAPH = {
     },
     "zmo_procurement_rules": {
         "id": "zmo_procurement_rules",
-        "title": "Порядок проведения закупок малого объема (ЗМО) и закупок по 223-ФЗ на Портале поставщиков",
+        "title": "Что такое закупки малого объема (ЗМО) на Портале поставщиков?",
         "url": "https://zakupki.mos.ru/knowledgebase/article/details/ais/589954",
         "keywords": [
             "закупки малого объема", "закупка малого объема", "змо", "223-фз", "223 фз", "до 3 млн", "до 3 миллионов",
