@@ -119,14 +119,20 @@ def extract_pdf_citation(section_header: str = "", text: str = "", raw_url: str 
             unquoted_sec = urllib.parse.unquote(section_header)
         except Exception:
             unquoted_sec = section_header
-        m = re.search(r'(?:Содержимое документа\s*\(|документ[:\s]+)?([^\s()<>"]+?\.(?:pdf|docx))\)?', unquoted_sec, re.IGNORECASE)
-        if m:
-            candidate_name = m.group(1).strip()
+        
+        m_doc = re.search(r'Содержимое документа\s*\(([^)]+?\.(?:pdf|docx))\)', unquoted_sec, re.IGNORECASE)
+        if m_doc:
+            candidate_name = m_doc.group(1).strip()
+        else:
+            m_any = re.search(r'([a-zA-Zа-яА-ЯёЁ0-9_\-\.\s%]+?\.(?:pdf|docx))', unquoted_sec, re.IGNORECASE)
+            if m_any:
+                candidate_name = m_any.group(1).strip()
 
     if not candidate_name and text:
-        m_txt = re.search(r'(?:файл|документ|инструкци\w*|регламент)[:\s]+([^\s()<>"]+?\.(?:pdf|docx))', text[:400], re.IGNORECASE)
+        m_txt = re.search(r'(?:файл|документ|инструкци\w*|регламент)[:\s]+([^\n\r()<>"]+?\.(?:pdf|docx))', text[:400], re.IGNORECASE)
         if m_txt:
             candidate_name = m_txt.group(1).strip()
+
 
     if candidate_name:
         fname = os.path.basename(candidate_name).strip()
