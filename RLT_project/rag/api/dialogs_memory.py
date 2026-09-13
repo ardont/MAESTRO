@@ -1,8 +1,9 @@
 import asyncio
 from logging import getLogger
 
+import urllib.parse
 from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, Response
 from pathlib import Path
 from .schemas import LLMSaveRequest
 from ..dialog_knowledge import save_dialog_knowledge
@@ -10,8 +11,29 @@ from ..dialog_knowledge import save_dialog_knowledge
 logger = getLogger(__name__)
 app = FastAPI()
 _root = Path(__file__).resolve().parents[3]
-app.mount('/media', StaticFiles(directory=_root / 'media', check_dir=False), name='knowledge-media')
-app.mount('/images', StaticFiles(directory=_root / 'dataset' / 'images', check_dir=False), name='knowledge-images')
+
+@app.get('/media/{file_path:path}')
+async def serve_media(file_path: str):
+    clean_path = urllib.parse.unquote(file_path).lstrip('/')
+    candidate_roots = [
+        _root / 'media',
+        _root / 'dataset' / 'media',
+        _root / 'dataset' / 'knowledgebase_mos_ru' / 'media',
+        _root / 'dataset' / 'images',
+        Path('/app/media'),
+        Path('/app/dataset/media'),
+        Path('/app/dataset/knowledgebase_mos_ru/media'),
+    ]
+    for root in candidate_roots:
+        target = root / clean_path
+        if target.is_file():
+            return FileResponse(target)
+    return Response(status_code=404, content="Image not found", media_type="text/plain")
+
+@app.get('/images/{file_path:path}')
+async def serve_images(file_path: str):
+    return await serve_media(file_path)
+
 # Serialize model work within this worker to avoid concurrent model loads / RAM spikes.
 _index_lock = asyncio.Lock()
 

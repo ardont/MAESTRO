@@ -71,4 +71,6 @@ dataset/
 /txt_dataset/roseltorg_knowledge_base_full.txt
 
 *.png
+!media/
+!media/**
 /parse/
