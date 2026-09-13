@@ -236,13 +236,29 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
     # Проверяем, является ли вопрос продолжением текущего пошагового workflow
     is_workflow_continuation = False
+    is_workflow_clarification = False
+    active_step_text = ""
+    active_step_idx = 0
     if active_node:
+        steps = active_node.get("workflow_steps", [])
+        active_step_idx = max(0, min(getattr(chat, "current_step", 1) - 1, len(steps) - 1)) if steps else 0
+        active_step_text = steps[active_step_idx] if steps else ""
+
         msg_l = user_message.lower().strip()
         step_words = ["дальше", "далее", "следующ", "продолж", "потом", "шаг", "второй", "третий", "четверт", "давай", "ок", "понял"]
+        clarify_words = [
+            "подробн", "расскаж", "раскаж", "поясн", "объясн", "уточн", "как именно", "как это",
+            "что это", "в смысле", "детали", "где найти", "не понял", "не поняла", "что значит"
+        ]
         has_step_intent = any(w in msg_l for w in step_words)
+        has_clarify_intent = any(w in msg_l for w in clarify_words) or ("?" in msg_l and len(msg_l.split()) <= 12)
         has_node_keywords = any(kw in msg_l for kw in active_node.get("keywords", []))
-        if has_step_intent or has_node_keywords:
+
+        # Если вопрос связан с активным регламентом или является уточнением по текущему шагу
+        if has_step_intent or has_node_keywords or has_clarify_intent or (new_graph_node is None and len(msg_l.split()) <= 8):
             is_workflow_continuation = True
+            if has_clarify_intent or (not has_step_intent and not has_node_keywords):
+                is_workflow_clarification = True
 
     if new_graph_node:
         if active_node and new_graph_node["id"] != active_node["id"]:
@@ -278,7 +294,10 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         print(f"[GRAPHRAG] Точное совпадение с графом знаний: '{graph_node['title']}'")
 
     # 3. ГИБРИДНЫЙ ПОИСК В QDRANT (Dense + Sparse)
-    normalized_query = normalise_query(user_message, TERMINS)
+    search_query = user_message
+    if is_workflow_clarification and active_step_text:
+        search_query = f"{active_node['title']} {active_step_text} {user_message}"
+    normalized_query = normalise_query(search_query, TERMINS)
     t_search0 = time.time()
     logger.info("[SEARCH START] query=%r category=%s", normalized_query, category_filter)
     
@@ -374,11 +393,15 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     # Сохраняем в кэш контекста чата (ПРИОРИТЕТ 3)
     if chat:
         try:
-            workflow_to_offer = graph_node["id"] if graph_node else None
+            workflow_to_offer = graph_node["id"] if (graph_node and not active_node) else getattr(chat, "active_workflow", None)
+            cached_checkpoints = []
+            if hasattr(chat, "context_cache") and isinstance(chat.context_cache, dict):
+                cached_checkpoints = chat.context_cache.get("checkpoints", [])
             chat.context_cache = {
                 "items": new_cache_items[:6],
                 "suggested_workflow": workflow_to_offer,
-                "graph_node_id": graph_node["id"] if graph_node else None
+                "graph_node_id": graph_node["id"] if graph_node else None,
+                "checkpoints": cached_checkpoints
             }
             if hasattr(chat, "save"):
                 chat.save(update_fields=["context_cache"])
@@ -411,7 +434,15 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
     # 5. СОСТАВЛЕНИЕ ПРОМПТА ДЛЯ LLM
     chat_history_text = ""
-    if active_node:
+    if is_workflow_clarification and active_node:
+        chat_history_text = (
+            f"Пользователь проходит пошаговый процесс «{active_node['title']}» и сейчас находится на шаге {active_step_idx + 1}: «{active_step_text}».\n"
+            f"Пользователь попросил разъяснить этот шаг: «{user_message}».\n"
+            "ТРЕБОВАНИЕ: Дай подробное, исчерпывающее и понятное практическое разъяснение именно этого шага на основе базы знаний. "
+            "НЕ начинай процесс с первого шага и НЕ переходи к следующему шагу самостоятельно. "
+            "В самом конце ответа обязательно добавь предложение: «Когда будете готовы перейти к следующему действию, напишите **«Далее»** или **«Готово»**.»\n\n"
+        )
+    elif active_node:
         chat_history_text = (f"Пользователь проходит процесс {active_node['title']}, "
                              f"текущий шаг {chat.current_step}. Ответь на уточнение по этому шагу; "
                              "не начинай процесс заново и не переходи к следующему шагу.\n\n")
@@ -459,7 +490,20 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     is_invalid = not llm_answer or len(llm_answer.strip()) < 20
     if is_invalid:
         logger.info("[FALLBACK] Активирован детерминированный синтез ответа из Базы Знаний и Графа.")
-        if graph_node:
+        if is_workflow_clarification and active_node:
+            node_url = active_node.get("url", "https://zakupki.mos.ru/knowledgebase/main")
+            node_title = clean_citation_title(active_node["title"], node_url)
+            llm_answer = (
+                f"### Пояснение к шагу {active_step_idx + 1}: {active_step_text}\n\n"
+                f"Для выполнения данного шага на Портале поставщиков:\n"
+                f"1. Войдите в Личный кабинет на Портале поставщиков (zakupki.mos.ru) с помощью КЭП.\n"
+                f"2. Откройте соответствующий раздел («Каталог СТЕ» или «Единый реестр закупок») через главное меню навигации.\n"
+                f"3. Выполните регламентные действия в соответствии с порядком закупки (по 223-ФЗ или 44-ФЗ).\n\n"
+                f"Когда будете готовы перейти к следующему действию, напишите **«Далее»** или **«Готово»**.\n\n"
+                f"---\n"
+                f"📖 **Источник:** [{node_title}]({node_url})"
+            )
+        elif graph_node:
             steps_formatted = "\n".join([f"**{i+1}.** {s}" for i, s in enumerate(graph_node["workflow_steps"])])
             deadlines_formatted = "\n".join([f"• {d}" for d in graph_node["deadlines"]])
             node_url = graph_node.get("url", "https://zakupki.mos.ru/knowledgebase/main")

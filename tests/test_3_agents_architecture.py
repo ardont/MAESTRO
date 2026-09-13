@@ -104,6 +104,13 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertEqual(classify_workflow_intent("позови человека"), "OPERATOR")
         self.assertEqual(classify_workflow_intent("оператор"), "OPERATOR")
 
+        # Уточняющий вопрос / Просьба пояснить (CLARIFY)
+        self.assertEqual(classify_workflow_intent("раскажи подробнее"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("расскажи подробнее"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("подробнее"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("поясни этот шаг"), "CLARIFY")
+        self.assertEqual(classify_workflow_intent("не понял"), "CLARIFY")
+
     def test_agent2_step_advancement_and_checklist(self):
         """Агент 2: Пошаговое продвижение с сохранением [✓] в чек-лист."""
         self.chat.context_cache = {'suggested_workflow': 'ecp_cryptopro'}
@@ -114,6 +121,8 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertIn("Шаг 1 из", res1["answer"])
         self.assertEqual(self.chat.active_workflow, "ecp_cryptopro")
         self.assertEqual(self.chat.current_step, 1)
+        # Проверяем чистое каноническое название статьи в цитате
+        self.assertEqual(res1["citations"][0]["title"], "Как произвести настройку плагина КРИПТОПРО?")
 
         # Шаг 2 (пользователь написал "сделал")
         res2 = handle_workflow("сделал, всё получилось", self.chat)
@@ -160,6 +169,7 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         node = find_graph_node("Закупки малого объема до 3 млн рублей по 223-ФЗ")
         self.assertIsNotNone(node)
         self.assertEqual(node["id"], "zmo_procurement_rules")
+        self.assertEqual(node["title"], "Что такое закупки малого объема (ЗМО) на Портале поставщиков?")
         self.assertIn("589954", node["url"])
         self.assertIn("44-ФЗ", str(node["law_references"]))
         self.assertIn("223-ФЗ", str(node["law_references"]))
@@ -203,7 +213,8 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertIsNotNone(node_arb)
         self.assertEqual(node_arb["id"], "portal_complaint_arbitration")
         self.assertIn("507199", node_arb["url"])
-        self.assertIn("Арбитраж", node_arb["title"])
+        self.assertEqual(node_arb["title"], "Как обжаловать блокировку на Портале поставщиков?")
+        self.assertIn("Арбитраж", str(node_arb["law_references"]))
 
         # 3. Точные названия приложений Регламента CMS
         cms_app8_url = "https://zakupki.mos.ru/knowledgebase/article/details/cms/4n50757tk43h15gxn22r5655d9"
@@ -219,6 +230,38 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         title_reg = clean_citation_title("Подача жалобы в ФАС", reg_url)
         self.assertEqual(title_reg, "Регламент информационного взаимодействия АИС «Портал поставщиков»")
 
+    def test_workflow_clarification_and_continuation(self):
+        """Проверка: уточнение на шаге регламента ('раскажи подробнее') не сбрасывает процесс и дает верную цитату."""
+        self.chat.active_workflow = "zmo_procurement_rules"
+        self.chat.current_step = 3
+        self.chat.context_cache = {"suggested_workflow": "zmo_procurement_rules"}
+
+        # 1. Пользователь на шаге 3 пишет "раскажи подробнее"
+        intent = classify_workflow_intent("раскажи подробнее", active=True)
+        self.assertEqual(intent, "CLARIFY")
+
+        # handle_workflow передает управление в RAG без сброса активного workflow
+        wf_res = handle_workflow("раскажи подробнее", self.chat)
+        self.assertIsNone(wf_res)
+        self.assertEqual(self.chat.active_workflow, "zmo_procurement_rules")
+        self.assertEqual(self.chat.current_step, 3)
+
+        # 2. После получения ответа пользователь пишет "далее"
+        intent_next = classify_workflow_intent("далее", active=True)
+        self.assertEqual(intent_next, "ADVANCE")
+
+        # handle_workflow продвигает на шаг 4
+        wf_next = handle_workflow("далее", self.chat)
+        self.assertIsNotNone(wf_next)
+        self.assertIn("Шаг 4 из 5", wf_next["answer"])
+        self.assertEqual(self.chat.current_step, 4)
+
+        # 3. Название статьи в цитатах пошагового регламента строго каноническое
+        self.assertEqual(len(wf_next["citations"]), 1)
+        self.assertEqual(wf_next["citations"][0]["title"], "Что такое закупки малого объема (ЗМО) на Портале поставщиков?")
+        self.assertIn("589954", wf_next["citations"][0]["url"])
+
 
 if __name__ == '__main__':
     unittest.main()
+
