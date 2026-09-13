@@ -94,6 +94,8 @@ def get_media_map() -> dict:
 def resolve_image_url(raw_url: str) -> Optional[str]:
     """
     Нормализует URL скриншота базы знаний в локальный веб-путь /media/...
+    Обрабатывает как полные ссылки (https://help.mos.ru/...), так и относительные
+    (/uploads/..., images/...) и обрезанные при семантическом чанкинге URL без закрывающих скобок/расширений.
     Проверяет физическое наличие файла на диске в MEDIA_ROOT.
     Если файл отсутствует — возвращает None, исключая появление битых картинок.
     """
@@ -126,13 +128,34 @@ def resolve_image_url(raw_url: str) -> Optional[str]:
 
     media_root = Path(media_root)
 
-    # 1. Проверяем точное совпадение в media_map
-    target_filename = media_map.get(raw_clean)
+    # 1. Варианты ключей для поиска в media_map
+    candidate_keys = [
+        raw_clean,
+        raw_clean + ").png",
+        raw_clean + ".png",
+        raw_clean.split("?")[0],
+    ]
+    if raw_clean.startswith("images/"):
+        sub = "/uploads/" + raw_clean[7:]
+        candidate_keys.extend([sub, sub + ").png", sub + ".png"])
+    elif raw_clean.startswith("/images/"):
+        sub = "/uploads/" + raw_clean[8:]
+        candidate_keys.extend([sub, sub + ").png", sub + ".png"])
 
-    # 2. Проверяем URL без query params
+    target_filename = None
+    for k in candidate_keys:
+        if k in media_map:
+            target_filename = media_map[k]
+            break
+
+    # 2. Частичный поиск по основе имени (например blobid1(208) или stat_reg)
     if not target_filename:
-        clean_no_q = raw_clean.split("?")[0]
-        target_filename = media_map.get(clean_no_q)
+        stem = raw_clean.split("/")[-1].split("?")[0].rstrip(")")
+        if stem and len(stem) >= 5:
+            for k, v in media_map.items():
+                if stem in k:
+                    target_filename = v
+                    break
 
     # 3. Если это имя файла или путь /media/...
     if not target_filename and not raw_clean.startswith("http"):
