@@ -64,12 +64,18 @@ def api_ask(request):
     is_toxic = guardrail.get("is_blocked", False)
 
     if is_operator_requested or is_toxic:
-        # 1. Анализируем контекст диалога для составления Context Card
+        from .router import extract_error_code
+        from .escalation import (
+            generate_ticket_id,
+            determine_support_line,
+            format_escalation_reply,
+            build_operator_context_card
+        )
+
         cache = chat.context_cache if isinstance(chat.context_cache, dict) else {}
         last_line_info = cache.get("last_line_info") or route_support_line(question)
         
         # Поиск кода ошибки (в текущем сообщении или в истории)
-        from .router import extract_error_code
         detected_error = extract_error_code(question)
         if not detected_error:
             for prev_m in chat.messages.filter(author=user).order_by('-created_at')[:5]:
@@ -83,46 +89,41 @@ def api_ask(request):
         if not checkpoints:
             checkpoints = ["Первичное обращение пользователя; пошаговый мастер не запускался"]
 
-        # Определение фактической линии (L1, L2 или L3)
-        is_l3 = (last_line_info.get("line") == "L3") or bool(detected_error)
-        is_l2 = (last_line_info.get("line") == "L2") and not is_l3
-        target_line = "L3" if is_l3 else ("L2" if is_l2 else "L1")
+        # Определение линии (L3 перенаправляется на L2 с флагом подтверждения)
+        line_info = determine_support_line(
+            issue_text=question,
+            error_code=detected_error,
+            current_line=last_line_info.get("line")
+        )
 
-        # Формулировка ответа для пользователя в чате (строго по согласованию)
+        ticket_id = generate_ticket_id(chat.id)
+
+        # Формулировка ответа для пользователя
         if is_toxic:
-            reply_text = str(guardrail.get('reply', '')) + "\n\nПередаю диалог дежурному оператору службы поддержки..."
-        elif is_l3:
-            reply_text = (
-                "Данное обращение классифицировано как вопрос 3-й линии (системно-техническая экспертиза / разработчики платформы). "
-                "Ваша заявка сформирована и направлена на рассмотрение дежурному инженеру. "
-                "Специалист 2-й линии уже подключается к чату для уточнения технических деталей и ведения вашего обращения."
-            )
+            reply_text = str(guardrail.get('reply', '')) + f"\n\nДиалог официально зарегистрирован (`№ {ticket_id}`) и передан дежурному оператору поддержки."
         else:
-            line_label = "Линии технической поддержки" if is_l2 else "Линии общей поддержки"
-            reply_text = (
-                f"Передаю ваш диалог дежурному специалисту {line_label}. "
-                "Я передал оператору историю нашей беседы и пройденные шаги, чтобы вам не пришлось повторять всё заново. "
-                "Специалист уже подключается..."
-            )
+            reply_text = format_escalation_reply(ticket_id, line_info, checkpoints)
 
-        # 2. Формируем Context Card для оператора
+        # Формируем Context Card для оператора
         orig_issue = question
         if len(question) <= 15:
             prev_user_msgs = chat.messages.filter(author=user).exclude(id=in_msg.id).order_by('-created_at')
             if prev_user_msgs.exists():
                 orig_issue = prev_user_msgs.first().text
 
-        operator_card = {
-            "issue": orig_issue,
-            "line": target_line,
-            "line_name": "Экспертная линия и интеграции (Инженеры / ФАС)" if is_l3 else ("Линия технической поддержки" if is_l2 else "Линия общей поддержки"),
-            "checkpoints": checkpoints,
-            "error_code": detected_error or "Не обнаружен"
-        }
+        operator_card = build_operator_context_card(
+            ticket_id=ticket_id,
+            issue=orig_issue,
+            line_info=line_info,
+            checkpoints=checkpoints,
+            error_code=detected_error
+        )
 
         # Сохраняем карточку в кэш контекста чата
         cache["operator_card"] = operator_card
         chat.context_cache = cache
+        chat.active_workflow = None
+        chat.current_step = 0
 
         # Назначаем чат на специалиста поддержки
         from django.db.models import Count
@@ -134,7 +135,7 @@ def api_ask(request):
             support_agent = User.objects.create(role="support_staff", is_active=True)
             
         chat.assigned_to = support_agent
-        chat.save(update_fields=["assigned_to", "context_cache"])
+        chat.save(update_fields=["assigned_to", "context_cache", "active_workflow", "current_step"])
 
         bot, _ = User.objects.get_or_create(role="llm_bot", defaults={"is_active": True})
         out_msg = Message.objects.create(
@@ -145,21 +146,22 @@ def api_ask(request):
         )
 
         logger.info(f"=== [OPERATOR ESCALATION CARD] ===")
+        logger.info(f"  Тикет: {operator_card['ticket_id']}")
         logger.info(f"  Суть проблемы: {operator_card['issue']}")
-        logger.info(f"  Линия: {operator_card['line']} ({operator_card['line_name']})")
+        logger.info(f"  Назначенная линия: {operator_card['assigned_line']} ({operator_card['assigned_line_name']})")
+        logger.info(f"  Требует L3: {operator_card['needs_l3_confirmation']}")
         logger.info(f"  Чекпоинты: {operator_card['checkpoints']}")
-        logger.info(f"  Код ошибки: {operator_card['error_code']}")
         logger.info(f"==================================")
-        print(f"[OPERATOR TRANSFER] Чат {chat.id} передан на {operator_card['line']} оператору {support_agent.id}")
+        print(f"[OPERATOR TRANSFER] Чат {chat.id} передан на {operator_card['assigned_line']} (Тикет: {ticket_id}) оператору {support_agent.id}")
 
         return JsonResponse({
             "answer": reply_text,
             "citations": [],
             "images": [],
             "line_info": {
-                "line": target_line,
-                "name": operator_card["line_name"],
-                "badge_color": "#d97706" if is_l3 else ("#0284c7" if is_l2 else "#2563eb")
+                "line": line_info["routed_line"],
+                "name": line_info["routed_line_name"],
+                "badge_color": line_info.get("badge_color", "#2563eb")
             },
             "operator_card": operator_card,
             "assigned_to": str(support_agent.id),
@@ -191,7 +193,7 @@ def api_ask(request):
                 text=answer_text,
                 is_read=True
             )
-        return JsonResponse({
+        resp_payload = {
             "answer": answer_text,
             "citations": citations,
             "images": [],
@@ -203,7 +205,11 @@ def api_ask(request):
                 "question_message": str(in_msg.id),
                 "answer_message": str(out_msg.id),
             }
-        }, status=200)
+        }
+        if "operator_card" in workflow_res:
+            resp_payload["operator_card"] = workflow_res["operator_card"]
+            resp_payload["assigned_to"] = str(chat.assigned_to.id) if chat.assigned_to else None
+        return JsonResponse(resp_payload, status=200)
 
     # 4. СТАНДАРТНЫЙ RAG ЗАПРОС
     line_info = route_support_line(question)
