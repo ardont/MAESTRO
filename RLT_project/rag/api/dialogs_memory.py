@@ -2,11 +2,16 @@ import asyncio
 from logging import getLogger
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from .schemas import LLMSaveRequest
 from ..dialog_knowledge import save_dialog_knowledge
 
 logger = getLogger(__name__)
 app = FastAPI()
+_root = Path(__file__).resolve().parents[3]
+app.mount('/media', StaticFiles(directory=_root / 'media', check_dir=False), name='knowledge-media')
+app.mount('/images', StaticFiles(directory=_root / 'dataset' / 'images', check_dir=False), name='knowledge-images')
 # Serialize model work within this worker to avoid concurrent model loads / RAM spikes.
 _index_lock = asyncio.Lock()
 

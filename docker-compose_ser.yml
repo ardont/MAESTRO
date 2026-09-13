@@ -31,6 +31,7 @@ services:
     command: ["faststream", "run", "chat.kafka.broker:app", "--workers", "1"]
     volumes:
       - python_cache:/root/.cache
+      - ./media:/app/media:ro
       - type: bind
         source: ${EMBEDDING_MODEL_HOST_PATH:-/Users/todaisy/models/ru-en-RoSBERTa}
         target: /models/ru-en-RoSBERTa
@@ -53,6 +54,7 @@ services:
       EMBEDDING_MODEL_NAME: /models/ru-en-RoSBERTa
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gpt-oss:20b}
+      RAG_PUBLIC_URL: ${RAG_PUBLIC_URL:-http://localhost:8989}
       MEMORY_OLLAMA_TIMEOUT: ${MEMORY_OLLAMA_TIMEOUT:-180}
       SUPPORT_SERVICE_URL: ${SUPPORT_SERVICE_URL:-http://localhost:8067}
       # KAFKA_URL on the host may be localhost:9092; that cannot be used here.
