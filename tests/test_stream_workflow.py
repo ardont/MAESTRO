@@ -52,6 +52,41 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn('Все шаги', result['answer'])
             self.assertIsNone(chat.active_workflow)
 
+    def test_affirmative_and_advance_variations(self):
+        with patch.object(main_rag, 'redis_client', MemoryRedis()):
+            phrases = ["давай", "давай по шагам", "давай пройдемся по шагам", "пройдемся по шагам", "давай пошагово", "ок давай"]
+            for i, phrase in enumerate(phrases):
+                chat = load_conversation('user', 100 + i)
+                chat.context_cache = {'suggested_workflow': 'ecp_cryptopro'}
+                res = handle_workflow(phrase, chat)
+                self.assertIsNotNone(res, f"Failed on phrase: {phrase}")
+                self.assertIn("Шаг 1 из", res["answer"])
+                self.assertEqual(res["line_info"]["line"], "L2")
+
+            # Test advancing variations
+            chat = load_conversation('user', 200)
+            chat.active_workflow = 'ecp_cryptopro'
+            chat.current_step = 1
+            chat.save()
+            for advance_cmd in ["давай дальше", "идем дальше", "следующий шаг", "готово", "понял"]:
+                res = handle_workflow(advance_cmd, chat)
+                self.assertIsNotNone(res, f"Failed on advance cmd: {advance_cmd}")
+
+    def test_topic_switching_clears_active_workflow(self):
+        with patch.object(main_rag, 'redis_client', MemoryRedis()):
+            chat = load_conversation('user', 300)
+            chat.active_workflow = 'ecp_cryptopro'
+            chat.current_step = 1
+            chat.context_cache = {'suggested_workflow': 'ecp_cryptopro'}
+            chat.save()
+
+            # Asking about quotation session should clear the active workflow and return None to let RAG handle it
+            res = handle_workflow('Как подать ценовое предложение во время котировочной сессии?', chat)
+            self.assertIsNone(res)
+            reloaded = load_conversation('user', 300)
+            self.assertIsNone(reloaded.active_workflow)
+            self.assertEqual(reloaded.current_step, 0)
+
 
 class StreamingTests(unittest.IsolatedAsyncioTestCase):
     async def test_first_token_arrives_while_ollama_still_generating(self):

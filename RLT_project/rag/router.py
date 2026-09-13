@@ -30,6 +30,12 @@
 import re
 from typing import Dict, Any, Optional
 
+import re
+import logging
+from typing import Dict, Any, Optional
+
+logger = logging.getLogger("rag")
+
 # ─────────────────────────────────────────────
 # 1. ГАРДРЕЙЛ: Регулярные выражения для детекции ненормативной лексики
 # ─────────────────────────────────────────────
@@ -39,13 +45,21 @@ TOXICITY_PATTERNS = [
 ]
 TOXICITY_REGEX = re.compile("|".join(TOXICITY_PATTERNS), re.IGNORECASE)
 
+ERROR_CODE_REGEX = re.compile(
+    r'\b(рдик[_\s]*[a-zA-Z0-9_]+|dp_paket_eis[_\s0-9]+|on_nschfdoppr\w*|dit_pp\d+|н_еис[_\s]*[a-zA-Z0-9_]+|0x[0-9a-fA-F]{4,8}|err[_\s0-9]+)\b',
+    re.IGNORECASE
+)
+
+
+def extract_error_code(text: str) -> Optional[str]:
+    """Извлекает код технической/интеграционной ошибки (РДИК_1074, DP_PAKET_EIS, 0x80090016 и т.п.)."""
+    m = ERROR_CODE_REGEX.search(text)
+    return m.group(1).upper() if m else None
+
 
 def check_guardrails(user_message: str) -> Dict[str, Any]:
     """
-    ГАРДРЕЙЛ: мгновенная проверка сообщения пользователя нgа токсичность и ненормативную лексику.
-    
-    Вызывается самым первым шагом RAG-пайплайна (< 1 мс).
-    Если обнаружен мат — возвращает готовый вежливый отказ без затрат ресурсов LLM.
+    ГАРДРЕЙЛ: мгновенная проверка сообщения пользователя на токсичность и ненормативную лексику.
     """
     if TOXICITY_REGEX.search(user_message):
         return {
@@ -60,12 +74,14 @@ def check_guardrails(user_message: str) -> Dict[str, Any]:
 # 2. СЛОВАРИ КЛЮЧЕВЫХ СЛОВ ДЛЯ ЛИНИЙ ПОДДЕРЖКИ
 # ─────────────────────────────────────────────
 
-# Техническая линия: ЭЦП, КриптоПро, МЧД, браузеры, сертификаты
+# Техническая линия: ЭЦП, КриптоПро, МЧД, браузеры, сертификаты, профиль компании, права
 KEYWORDS_TECH_ECP = [
     "криптопро", "cryptopro", "эцп", "плагин", "сертификат", "рутокен", "rutoken",
     "токен", "драйвер", "ошибка плагина", "не подписывает", "браузер", "chromium-gost",
     "яндекс браузер", "кэп", "укэп", "мчд", "доверенность", "джакарта", "jacarta",
-    "считыватель", "не удается подписать", "ошибка 0x", "ssl", "tls", "csp"
+    "считыватель", "не удается подписать", "ошибка 0x", "ssl", "tls", "csp",
+    "блокировка личного кабинета", "заблокирован кабинет", "смена инн", "смена огрн",
+    "полномочия", "изменение данных пользователя", "редактирование профиля", "смена типа организации"
 ]
 
 # Котировочные сессии и закупки по потребностям
@@ -73,7 +89,7 @@ KEYWORDS_QUOTATION = [
     "котировочн", "котировочная сессия", "закупка по потребностям", "ценовое предложение",
     "подать оферту", "победитель котировочной", "второй участник", "переход победы",
     "продление сессии", "снижение цены", "шаг снижения", "отзыв оферты", "мини-аукцион",
-    "ставка", "победитель закупки"
+    "ставка", "победитель закупки", "автоставка", "автобот"
 ]
 
 # Каталог товаров, СТЕ и оферты
@@ -87,8 +103,8 @@ KEYWORDS_STE = [
 # Исполнение контракта и электронное актирование
 KEYWORDS_CONTRACT = [
     "электронное исполнение", "электронное актирование", "упд", "универсальный передаточный документ",
-    "еис", "калуга астрал", "рдик", "приемка", "акт приемки", "подписание контракта",
-    "счет на оплату", "структурированный документ", "интеграционный контроль", "черновик упд",
+    "еис", "калуга астрал", "приемка", "акт приемки", "подписание контракта",
+    "счет на оплату", "структурированный документ", "черновик упд",
     "расторжение контракта", "допсоглашение", "протокол разногласий"
 ]
 
@@ -101,8 +117,8 @@ KEYWORDS_REGISTRATION = [
 
 # Юридическая линия: 44-ФЗ, 223-ФЗ, споры, ФАС
 KEYWORDS_LEGAL = [
-    "жалоба в фас", "фас", "рнп", "реестр недобросовестных", "нмцк", "ст 93", "ст 44",
-    "статья 93", "статья 44", "отклонили заявку", "отклонение заявки", "нацрежим",
+    "жалоба в фас", "фас", "рнп", "реестр недобросовестных", "нмцк", "ст 105", "ст 106",
+    "статья 105", "статья 106", "отклонили заявку", "отклонение заявки", "нацрежим",
     "постановление правительства", "44-фз", "223-фз", "135-фз", "63-фз", "закон о закупках"
 ]
 
@@ -115,85 +131,83 @@ KEYWORDS_SERVICES = [
 
 def route_support_line(user_message: str) -> Dict[str, Any]:
     """
-    МАРШРУТИЗАТОР: интеллектуальное распределение вопроса по предметным линиям.
-    
-    Алгоритм:
-      1. Нормализует текст запроса (нижний регистр).
-      2. Подсчитывает вес (score) совпадений по каждому экспертному домену.
-      3. Выбирает наиболее релевантную категорию для Qdrant payload-фильтра.
-      4. При отсутствии специфических маркеров переключается на общесистемную линию L1 (поиск без фильтра).
+    МАРШРУТИЗАТОР: классифицирует обращение строго по 3 каноническим линиям поддержки:
+      L1 • Линия общей поддержки и навигации (общие вопросы, регистрация, каталог, КС, финансы)
+      L2 • Линия технической поддержки (ЭЦП, КриптоПро, МЧД, ПО, плагины, профиль, УПД)
+      L3 • Экспертная линия и системные интеграции (ошибки РДИК, интеграции ЕИС/ЭДО Калуга, разработчики, ФАС)
     """
     msg_lower = user_message.lower()
 
+    # Проверка на технический код ошибки (РДИК_0161, РДИК_0474, DP_PAKET_EIS, 0x... и т.д.)
+    err_code = extract_error_code(user_message)
+    if err_code or "рдик" in msg_lower or "интеграционн" in msg_lower or "калуг" in msg_lower or "пакет еис" in msg_lower:
+        res = {
+            "line": "L3",
+            "name": "Экспертная линия и интеграции (Инженеры / ФАС)",
+            "category_filter": "contract_execution",
+            "badge_color": "#d97706",
+            "error_code": err_code or "Интеграционный контроль"
+        }
+        logger.info(f"[ROUTER] Обращение классифицировано как L3 (код ошибки: {res['error_code']})")
+        return res
+
     scores = {
         "ecp_mchd": sum(1 for kw in KEYWORDS_TECH_ECP if kw in msg_lower),
+        "contract_execution": sum(1 for kw in KEYWORDS_CONTRACT if kw in msg_lower),
+        "legal": sum(1 for kw in KEYWORDS_LEGAL if kw in msg_lower),
         "quotation_session": sum(1 for kw in KEYWORDS_QUOTATION if kw in msg_lower),
         "ste_catalog": sum(1 for kw in KEYWORDS_STE if kw in msg_lower),
-        "contract_execution": sum(1 for kw in KEYWORDS_CONTRACT if kw in msg_lower),
         "registration": sum(1 for kw in KEYWORDS_REGISTRATION if kw in msg_lower),
-        "legal": sum(1 for kw in KEYWORDS_LEGAL if kw in msg_lower),
         "services": sum(1 for kw in KEYWORDS_SERVICES if kw in msg_lower),
     }
 
-    # Находим категорию с максимальным числом совпадений
     best_cat, best_score = max(scores.items(), key=lambda x: x[1])
 
     if best_score > 0:
-        if best_cat == "ecp_mchd":
-            return {
-                "line": "L2",
-                "name": "Линия технической поддержки (ЭЦП, КриптоПро, МЧД, ПО)",
-                "category_filter": "ecp_mchd",
-                "badge_color": "#0284c7"
-            }
-        elif best_cat == "quotation_session":
-            return {
-                "line": "L3",
-                "name": "Линия котировочных сессий и мини-аукционов",
-                "category_filter": "quotation_session",
-                "badge_color": "#eab308"
-            }
-        elif best_cat == "ste_catalog":
-            return {
-                "line": "L4",
-                "name": "Линия Каталога товаров, СТЕ и оферт",
-                "category_filter": "ste_catalog",
-                "badge_color": "#f97316"
-            }
-        elif best_cat == "contract_execution":
-            return {
-                "line": "L5",
-                "name": "Линия электронного актирования и исполнения контрактов (УПД/ЕИС)",
-                "category_filter": "contract_execution",
-                "badge_color": "#8b5cf6"
-            }
-        elif best_cat == "registration":
-            return {
-                "line": "L6",
-                "name": "Линия регистрации, аккредитации и управления профилем",
-                "category_filter": "registration",
-                "badge_color": "#14b8a6"
-            }
-        elif best_cat == "legal":
+        # L3: Правовые споры, ФАС, законодательство
+        if best_cat == "legal":
             leg_cat = "44fz" if "44" in msg_lower else ("223fz" if "223" in msg_lower else "legislation")
-            return {
-                "line": "L7",
-                "name": "Линия правовой экспертизы (44-ФЗ / 223-ФЗ / ФАС)",
+            res = {
+                "line": "L3",
+                "name": "Экспертная линия и интеграции (Инженеры / ФАС)",
                 "category_filter": leg_cat,
-                "badge_color": "#7c3aed"
+                "badge_color": "#d97706",
+                "error_code": None
             }
-        elif best_cat == "services":
-            return {
-                "line": "L8",
-                "name": "Линия финансовых сервисов и гарантий",
-                "category_filter": "services",
-                "badge_color": "#06b6d4"
-            }
+            logger.info(f"[ROUTER] Вопрос направлен на L3: {best_cat}")
+            return res
 
-    # По умолчанию — Линия общей поддержки (поиск по всей базе знаний)
-    return {
+        # L2: Техподдержка: ЭЦП, КриптоПро, МЧД, плагины, электронное актирование/УПД
+        if best_cat in ("ecp_mchd", "contract_execution"):
+            res = {
+                "line": "L2",
+                "name": "Линия технической поддержки (ЭЦП, ПО, УПД)",
+                "category_filter": best_cat,
+                "badge_color": "#0284c7",
+                "error_code": None
+            }
+            logger.info(f"[ROUTER] Вопрос направлен на L2: {best_cat}")
+            return res
+
+        # L1: Линия общей поддержки (Котировочные сессии, Каталог товаров, Регистрация, Финансы)
+        res = {
+            "line": "L1",
+            "name": "Линия общей поддержки и навигации по Порталу Поставщиков",
+            "category_filter": best_cat,
+            "badge_color": "#2563eb",
+            "error_code": None
+        }
+        logger.info(f"[ROUTER] Вопрос направлен на L1: {best_cat}")
+        return res
+
+    # По умолчанию — Линия общей поддержки (L1)
+    res = {
         "line": "L1",
         "name": "Линия общей поддержки и навигации по Порталу Поставщиков",
         "category_filter": None,
-        "badge_color": "#16a34a"
+        "badge_color": "#2563eb",
+        "error_code": None
     }
+    logger.info("[ROUTER] Общий вопрос направлен на L1 (без фильтра)")
+    return res
+

@@ -107,8 +107,20 @@ def search_hybrid(
         payload = p.payload or {}
         text = payload.get("text", "").lower()
         title = payload.get("title", "").lower()
+        sec = payload.get("section_header", "").lower()
+        url = payload.get("url", "").lower()
         cat = payload.get("category", "")
         score = getattr(p, "score", 0.0)
+
+        # СТРОЖАЙШАЯ ФИЛЬТРАЦИЯ СТОРОННИХ РЕСУРСОВ (Zero-Tolerance):
+        # Наша единственная официальная платформа — Портал поставщиков Москвы (zakupki.mos.ru).
+        # Полностью исключаем любые упоминания сторонних площадок (Росэлторг и др.)
+        if "roseltorg" in url or "roseltorg" in title or "roseltorg" in sec:
+            continue
+        if "source url:" in title or "source url:" in sec:
+            continue
+        if url and not url.startswith("https://zakupki.mos.ru") and not url.startswith("http://zakupki.mos.ru") and not url.startswith("https://help.mos.ru"):
+            continue
 
         # Если задан фильтр категории, отсекаем несоответствующие (если есть из чего выбирать)
         if category_filter and cat != category_filter:
@@ -118,6 +130,10 @@ def search_hybrid(
         # Бустинг для жалобы в ФАС / 44-ФЗ
         if graph_node and graph_node["id"] == "fas_complaint_44fz":
             if "фас" in text or "фас" in title or "жалоб" in text or "105" in text:
+                final_score += 0.5
+                graph_boost_applied = True
+        elif graph_node and "zmo" in graph_node["id"]:
+            if "малого объем" in text or "малого объем" in title or "589954" in text or "котировочн" in text or "потребност" in text:
                 final_score += 0.5
                 graph_boost_applied = True
 

@@ -24,6 +24,9 @@ media/
 staticfiles/
 static_root/
 feedback_log.jsonl
+:memory*
+*.ses
+
 
 # --- Большие кэши и локальные хранилища
 pdf_cache/
