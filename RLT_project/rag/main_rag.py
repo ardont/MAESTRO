@@ -19,8 +19,10 @@ import requests
 from typing import Dict, Any, List, Optional, AsyncIterator
 
 from .normalize_query import normalise_query, TERMINS
-from .graph_rag import find_graph_node, format_graph_context_for_llm, get_workflow_step_response
-from .url_utils import normalize_portal_url, normalize_markdown_links, clean_citation_title
+from .url_utils import (
+    normalize_portal_url, normalize_markdown_links,
+    clean_citation_title, clean_citation_section
+)
 
 
 from .workflow import handle_workflow
@@ -333,13 +335,14 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         raw_url = payload.get("url", "")
         url = normalize_portal_url(raw_url) if raw_url else ""
         title = clean_citation_title(raw_title, url)
-        sec_header = payload.get("section_header", "")
+        sec_header = clean_citation_section(payload.get("section_header", ""))
         text_chunk = payload.get("text", "")
         chunk_images = payload.get("images", [])
 
         sec_label = f" ({sec_header})" if sec_header else ""
         context_parts.append(f"### {title}{sec_label}\n{text_chunk}")
 
+        # Добавляем в цитаты ТОЛЬКО проверенные ссылки
         if url and url not in [c.get("url") for c in citations]:
             citations.append({
                 "title": title,
@@ -425,11 +428,12 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 {full_context}
 
 Инструкции для ответа:
-1. Опирайся ИСКЛЮЧИТЕЛЬНО на предоставленную базу знаний. СТРОЖАЙШЕ ЗАПРЕЩЕНО выдумывать несуществующие разделы личного кабинета, формы, кнопки или регламентные сроки, которых нет в тексте.
-2. Сформулируй четкий, доброжелательный, исчерпывающий и структурированный по шагам ответ (1, 2, 3).
-3. Указывай финансовые условия (бесплатно / размер пошлины) и каналы подачи ТОЛЬКО если вопрос касается регламентных закупочных процедур (жалоба в ФАС, банковская гарантия, котировочная сессия). НЕ пиши о финансовых условиях при технических сбоях, ошибках (500 и др.) или настройке браузера.
-4. Если в базе знаний описаны конкретные разделы личного кабинета или пункты меню — выдели их кавычками или жирным шрифтом.
-5. В самом конце ответа ОБЯЗАТЕЛЬНО укажи первоисточник в формате:
+1. Опирайся ИСКЛЮЧИТЕЛЬНО на предоставленную базу знаний. СТРОЖАЙШЕ ЗАПРЕЩЕНО выдумывать несуществующие разделы личного кабинета, формы, кнопки, калькуляторы (например, «калькулятор "Проверка стоимости"», раздел «Параметры публикации», несуществующие кнопки) или регламентные сроки, которых нет в тексте базы знаний.
+2. Способы закупок на Портале поставщиков Москвы — это ИСКЛЮЧИТЕЛЬНО: «Котировочная сессия», «Прямая закупка» и «Закупка по потребностям». Других способов закупок малого объема на Портале нет.
+3. По 223-ФЗ заказчики проводят закупки в соответствии со своим Положением о закупке. Закон-основание (44-ФЗ или 223-ФЗ) и способ закупки не выбираются поставщиком в оферте, а определяются заказчиком при публикации закупки или формировании контракта.
+4. Сформулируй четкий, доброжелательный, исчерпывающий и структурированный по шагам ответ (1, 2, 3).
+5. Указывай финансовые условия (бесплатно / размер пошлины) и каналы подачи ТОЛЬКО если вопрос касается регламентных закупочных процедур (жалоба в ФАС, банковская гарантия, котировочная сессия). НЕ пиши о финансовых условиях при технических сбоях, ошибках (500 и др.) или настройке браузера.
+6. В самом конце ответа ОБЯЗАТЕЛЬНО укажи первоисточник в формате:
 📖 **Источник:** [{primary_title}]({primary_url})
 СТРОЖАЙШИЙ ЗАПРЕТ: Ссылка должна вести исключительно на https://zakupki.mos.ru. Не придумывай никаких сторонних ссылок.
 """

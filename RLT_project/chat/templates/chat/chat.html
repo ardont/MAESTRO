@@ -476,9 +476,10 @@
         if (data.citations && data.citations.length > 0) {
           citationsHtml = '<div class="citations-container"><b>📚 Официальные источники:</b>';
           data.citations.forEach(c => {
+            const secText = (c.section && c.section.trim()) ? ` <i>(${c.section.trim()})</i>` : '';
             citationsHtml += `
-              <a class="citation-card" href="${c.url}" target="_blank">
-                🔗 <span>${c.title} <i>(${c.section || 'Регламент'})</i></span>
+              <a class="citation-card" href="${c.url}" target="_blank" rel="noopener noreferrer">
+                🔗 <span>${c.title}${secText}</span>
               </a>
             `;
           });

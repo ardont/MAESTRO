@@ -154,6 +154,36 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         # Активный процесс снят, чтобы чат не залипал
         self.assertIsNone(self.chat.active_workflow)
 
+    def test_zmo_and_223fz_knowledge_graph(self):
+        """Агент 1: Проверка графового узла по ЗМО и 223-ФЗ со статьей 589954."""
+        from rag.graph_rag import find_graph_node
+        node = find_graph_node("Закупки малого объема до 3 млн рублей по 223-ФЗ")
+        self.assertIsNotNone(node)
+        self.assertEqual(node["id"], "zmo_procurement_rules")
+        self.assertIn("589954", node["url"])
+        self.assertIn("44-ФЗ", str(node["law_references"]))
+        self.assertIn("223-ФЗ", str(node["law_references"]))
+        self.assertIn("Котировочная сессия", str(node["workflow_steps"]))
+
+    def test_clean_citation_section_and_titles(self):
+        """Агент 1/3: Санитария ссылок, удаление технического мусора (Часть N) и SOURCE URL."""
+        from rag.url_utils import clean_citation_section, clean_citation_title, normalize_portal_url
+
+        # Очистка мусора чанкера (Часть 12) и SOURCE URL
+        sec1 = clean_citation_section("SOURCE URL: https://www.roseltorg.ru/knowledge_db/44fz/notes/test (Часть 5)")
+        self.assertEqual(sec1, "")
+
+        sec2 = clean_citation_section("Введение > Прикрепленный регламент/инструкция: (Часть 12)")
+        self.assertEqual(sec2, "Введение > Прикрепленный регламент/инструкция")
+
+        # Очистка названий
+        title_doc = clean_citation_title("Инструкция_по_созданию_оферты_и_СТЕ.pdf", "https://zakupki.mos.ru/cms/Media/docs/Инструкция_по_созданию_оферты_и_СТЕ.pdf")
+        self.assertEqual(title_doc, "Инструкция по созданию оферты и СТЕ")
+
+        # Нормализация ссылки статьи 589954
+        url_art = normalize_portal_url("https://zakupki.mos.ru/knowledgebase/article/details/ais/589954")
+        self.assertEqual(url_art, "https://zakupki.mos.ru/knowledgebase/article/details/ais/589954")
+
 
 if __name__ == '__main__':
     unittest.main()
