@@ -355,8 +355,13 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
 
         for img in chunk_images:
-            if img not in images:
-                images.append(img)
+            if not img or not isinstance(img, str):
+                continue
+            img_clean = img.strip().rstrip(")")
+            # Валидируем расширение или путь к изображению
+            if any(img_clean.lower().endswith(ext) for ext in ('.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif')) or '/media/' in img_clean:
+                if img_clean not in images:
+                    images.append(img_clean)
 
         new_cache_items.append({
             "title": title,

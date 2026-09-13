@@ -65,17 +65,20 @@ def get_verified_article(art_id: str) -> Optional[Dict[str, Any]]:
     return ARTICLES_BY_STATIC_ID.get(s) or ARTICLES_BY_ID.get(s)
 
 
+import html
+
 def clean_citation_section(section: str) -> str:
     """
     Очищает заголовок подраздела от технического мусора:
     - Удаляет SOURCE URL: ...
     - Удаляет технические индексы чанкера (Часть N)
     - Удаляет дублирование и мусорные префиксы
+    - Преобразует HTML-сущности (&quot;, &amp;)
     """
     if not section or not isinstance(section, str):
         return ""
 
-    s = section.strip()
+    s = html.unescape(section).strip()
     s = re.sub(r'SOURCE\s+URL:\s*https?://\S+', '', s, flags=re.IGNORECASE).strip()
     s = re.sub(r'https?://\S+', '', s).strip()
     s = re.sub(r'\s*\(Часть\s*\d+\)', '', s, flags=re.IGNORECASE).strip()
@@ -101,7 +104,7 @@ def clean_citation_title(title: str, url: str = "") -> str:
             art_id = m_ais.group(1)
             verified = get_verified_article(art_id)
             if verified and verified.get("title"):
-                return verified["title"]
+                return html.unescape(verified["title"]).strip()
             if art_id in {"572822", "493330", "398754"}:
                 return "Инструкция по работе с банковскими гарантиями"
 
@@ -110,12 +113,12 @@ def clean_citation_title(title: str, url: str = "") -> str:
             fname = unquoted.split("/")[-1].strip()
             fname_clean = re.sub(r'\.(pdf|docx)$', '', fname, flags=re.IGNORECASE).replace("_", " ")
             if fname_clean and len(fname_clean) > 3:
-                return fname_clean
+                return html.unescape(fname_clean).strip()
 
         if "банковск" in url.lower() or "garanti" in url.lower():
             return "Инструкция по работе с банковскими гарантиями"
 
-    cleaned = (title or "").strip()
+    cleaned = html.unescape((title or "")).strip()
     # Убираем технический мусор парсеров
     cleaned = re.sub(r'^SOURCE\s+URL:\s*https?://\S+', '', cleaned).strip()
     cleaned = re.sub(r'https?://\S+', '', cleaned).strip()
