@@ -452,20 +452,9 @@
     </div>
   </div>
 
-  <!-- Модальное окно изображения -->
-  <div id="imgModal" class="modal" onclick="this.style.display='none'">
-    <img id="modalImg" src=""/>
-  </div>
-
   <script>
     let currentChatId = null;
     let currentUserId = null;
-
-    function openModal(src) {
-      const m = document.getElementById('imgModal');
-      document.getElementById('modalImg').src = src;
-      m.style.display = 'flex';
-    }
 
     function askChip(text) {
       document.getElementById('userInput').value = text;
