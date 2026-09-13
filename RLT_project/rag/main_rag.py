@@ -444,7 +444,6 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 5. Указывай финансовые условия (бесплатно / размер пошлины) и каналы подачи ТОЛЬКО если вопрос касается регламентных закупочных процедур (жалоба в ФАС, банковская гарантия, котировочная сессия). НЕ пиши о финансовых условиях при технических сбоях, ошибках (500 и др.) или настройке браузера.
 6. В самом конце ответа ОБЯЗАТЕЛЬНО укажи первоисточник в формате:
 📖 **Источник:** [{primary_title}]({primary_url})
-СТРОЖАЙШИЙ ЗАПРЕТ: Ссылка должна вести исключительно на https://zakupki.mos.ru. Не придумывай никаких сторонних ссылок.
 """
 
     logger.debug(f"[LLM PROMPT] Длина промпта: {len(prompt)} символов")
@@ -512,9 +511,14 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
     llm_answer = re.sub(r'\[([^\]]+)\]\((https?://[^\)]+)\)', _sanitize_md_link, llm_answer)
 
-    # Проверяем наличие кликабельного источника в конце ответа
-    if "📖 **Источник:**" not in llm_answer and "Источник:" not in llm_answer:
-        llm_answer = llm_answer.strip() + f"\n\n📖 **Источник:** [{primary_title}]({primary_url})"
+    # Приводим блок «Источник:» к строго эталонному виду первоисточника
+    source_str = f"📖 **Источник:** [{primary_title}]({primary_url})"
+    if "📖 **Источник:**" in llm_answer:
+        llm_answer = re.sub(r'📖\s*\*\*Источник:\*\*\s*\[.*?\]\(.*?\)', source_str, llm_answer)
+    elif "Источник:" in llm_answer:
+        llm_answer = re.sub(r'Источник:\s*\[.*?\]\(.*?\)', source_str, llm_answer)
+    else:
+        llm_answer = llm_answer.strip() + f"\n\n{source_str}"
 
     # 8. ОБЯЗАТЕЛЬНОЕ ПРЕДЛОЖЕНИЕ ПОШАГОВОГО WORKFLOW (ПРИОРИТЕТ 4)
     workflow_offer = "\n\nХотите я помогу вам пройти этот процесс по шагам?"
