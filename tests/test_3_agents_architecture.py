@@ -184,6 +184,41 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         url_art = normalize_portal_url("https://zakupki.mos.ru/knowledgebase/article/details/ais/589954")
         self.assertEqual(url_art, "https://zakupki.mos.ru/knowledgebase/article/details/ais/589954")
 
+    def test_fas_and_portal_arbitration_distinction(self):
+        """Проверка строгого юридического разделения: ФАС (ЕИС) vs Жалоба на Портале (Арбитраж)."""
+        from rag.graph_rag import find_graph_node
+        from rag.url_utils import clean_citation_title, normalize_portal_url
+
+        # 1. Запрос по ФАС -> официальный портал ЕИС (zakupki.gov.ru), а не регламент Портала
+        node_fas = find_graph_node("Как подать жалобу в ФАС по 44-ФЗ?")
+        self.assertIsNotNone(node_fas)
+        self.assertEqual(node_fas["id"], "fas_complaint_44fz")
+        self.assertEqual(node_fas["url"], "https://zakupki.gov.ru")
+        self.assertIn("zakupki.gov.ru", node_fas["channel"])
+        title_fas = clean_citation_title(node_fas["title"], node_fas["url"])
+        self.assertEqual(title_fas, "Официальный портал ЕИС Закупки (zakupki.gov.ru)")
+
+        # 2. Запрос по блокировке на Портале -> Арбитражная комиссия Портала (статья 507199)
+        node_arb = find_graph_node("Как обжаловать блокировку на Портале поставщиков?")
+        self.assertIsNotNone(node_arb)
+        self.assertEqual(node_arb["id"], "portal_complaint_arbitration")
+        self.assertIn("507199", node_arb["url"])
+        self.assertIn("Арбитраж", node_arb["title"])
+
+        # 3. Точные названия приложений Регламента CMS
+        cms_app8_url = "https://zakupki.mos.ru/knowledgebase/article/details/cms/4n50757tk43h15gxn22r5655d9"
+        title_app8 = clean_citation_title("Общий регламент", cms_app8_url)
+        self.assertEqual(title_app8, "Приложение 8. Правила блокировки личного кабинета и ее снятия")
+
+        cms_app4_url = "https://zakupki.mos.ru/knowledgebase/article/details/cms/4gtfe46htq9ar7804w2j8g5gcy"
+        title_app4 = clean_citation_title("Что-то", cms_app4_url)
+        self.assertEqual(title_app4, "Приложение 4. Правила проведения котировочной сессии")
+
+        # 4. Общая ссылка на Регламент не может называться "Подача жалобы в ФАС"
+        reg_url = "https://zakupki.mos.ru/knowledgebase/article/regulation/cms"
+        title_reg = clean_citation_title("Подача жалобы в ФАС", reg_url)
+        self.assertEqual(title_reg, "Регламент информационного взаимодействия АИС «Портал поставщиков»")
+
 
 if __name__ == '__main__':
     unittest.main()

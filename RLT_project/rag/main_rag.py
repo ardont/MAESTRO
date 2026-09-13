@@ -342,14 +342,15 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         text_chunk = payload.get("text", "")
         chunk_images = payload.get("images", [])
 
-        sec_label = f" ({sec_header})" if sec_header else ""
+        clean_sec = sec_header if (sec_header and sec_header.strip().lower() != title.strip().lower()) else ""
+        sec_label = f" ({clean_sec})" if clean_sec else ""
         context_parts.append(f"### {title}{sec_label}\n{text_chunk}")
 
         # Добавляем в цитаты ТОЛЬКО проверенные ссылки
         if url and url not in [c.get("url") for c in citations]:
             citations.append({
                 "title": title,
-                "section": sec_header,
+                "section": clean_sec,
                 "url": url
             })
 
@@ -493,8 +494,9 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     llm_answer = normalize_markdown_links(llm_answer)
 
     # Допустимые проверенные URL из найденных документов базы знаний (все нормализованы)
-    valid_urls_set = {normalize_portal_url(c['url']) for c in citations if c.get('url') and c['url'].startswith('https://zakupki.mos.ru')}
+    valid_urls_set = {normalize_portal_url(c['url']) for c in citations if c.get('url')}
     valid_urls_set.add(primary_url)
+    valid_urls_set.add("https://zakupki.gov.ru")
     valid_urls_set.add("https://zakupki.mos.ru/knowledgebase/main")
     valid_urls_set.add("https://zakupki.mos.ru/knowledgebase/article/regulation/cms")
 

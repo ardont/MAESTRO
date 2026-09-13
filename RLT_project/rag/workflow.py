@@ -65,10 +65,16 @@ WORKFLOW_TO_LINE = {
         "badge_color": "#2563eb"
     },
     "fas_complaint_44fz": {
-        "line": "L2",
-        "name": "Линия технической поддержки (с подтверждением для специалистов 3-й линии / ФАС)",
+        "line": "L3",
+        "name": "Экспертная линия и интеграции (Инженеры / ФАС)",
         "needs_l3_confirmation": True,
         "badge_color": "#d97706"
+    },
+    "portal_complaint_arbitration": {
+        "line": "L2",
+        "name": "Линия технической поддержки (Арбитражная комиссия Портала)",
+        "needs_l3_confirmation": True,
+        "badge_color": "#0284c7"
     }
 }
 
