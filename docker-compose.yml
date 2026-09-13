@@ -44,7 +44,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      FASTAPI_PORT: 8989
+      FASTAPI_PORT: 8889
       REDIS_HOST: redis
       REDIS_PORT: 6379
       QDRANT_HOST: qdrant
@@ -70,9 +70,9 @@ services:
 
   memory-api:
     <<: *rag_runtime
-    command: ["uvicorn", "rag.api.dialogs_memory:app", "--host", "0.0.0.0", "--port", "8989"]
+    command: ["uvicorn", "rag.api.dialogs_memory:app", "--host", "0.0.0.0", "--port", "8889"]
     ports:
-      - "8989:8989"
+      - "8889:8889"
 
 volumes:
   qdrant_data:
