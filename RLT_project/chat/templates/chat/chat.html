@@ -476,7 +476,9 @@
         if (data.citations && data.citations.length > 0) {
           citationsHtml = '<div class="citations-container"><b>📚 Официальные источники:</b>';
           data.citations.forEach(c => {
-            const secText = (c.section && c.section.trim()) ? ` <i>(${c.section.trim()})</i>` : '';
+            const secClean = (c.section || '').trim();
+            const titleClean = (c.title || '').trim();
+            const secText = (secClean && secClean.toLowerCase() !== titleClean.toLowerCase()) ? ` <i>(${secClean})</i>` : '';
             citationsHtml += `
               <a class="citation-card" href="${c.url}" target="_blank" rel="noopener noreferrer">
                 🔗 <span>${c.title}${secText}</span>
