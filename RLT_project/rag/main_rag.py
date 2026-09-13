@@ -16,6 +16,7 @@ import json
 import time
 import logging
 import requests
+from pathlib import Path
 from typing import Dict, Any, List, Optional, AsyncIterator
 
 from .normalize_query import normalise_query, TERMINS
@@ -63,6 +64,86 @@ except Exception as e:
 def _get_active_ollama_model() -> str:
     """Use the configured model without silently selecting another installed model."""
     return os.environ.get("OLLAMA_MODEL", "gpt-oss:20b").strip() or "gpt-oss:20b"
+
+
+_MEDIA_MAP = None
+
+def get_media_map() -> dict:
+    """Загружает словарь маппинга изображений из dataset/data/media_map.json."""
+    global _MEDIA_MAP
+    if _MEDIA_MAP is None:
+        _MEDIA_MAP = {}
+        candidate_paths = [
+            Path(__file__).resolve().parent.parent.parent / "dataset" / "data" / "media_map.json",
+            Path(__file__).resolve().parent.parent / "dataset" / "data" / "media_map.json",
+            Path("/app/dataset/data/media_map.json"),
+        ]
+        for p in candidate_paths:
+            if p.exists():
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        _MEDIA_MAP = data.get("media", {})
+                        logger.info(f"[MEDIA] Загружен media_map ({len(_MEDIA_MAP)} записей) из {p}")
+                        break
+                except Exception as e:
+                    logger.warning(f"[MEDIA] Ошибка чтения media_map из {p}: {e}")
+    return _MEDIA_MAP
+
+
+def resolve_image_url(raw_url: str) -> Optional[str]:
+    """
+    Нормализует URL скриншота базы знаний в локальный веб-путь /media/...
+    Проверяет физическое наличие файла на диске в MEDIA_ROOT.
+    Если файл отсутствует — возвращает None, исключая появление битых картинок.
+    """
+    if not raw_url or not isinstance(raw_url, str):
+        return None
+
+    raw_clean = raw_url.strip().rstrip(")")
+    media_map = get_media_map()
+
+    media_root = None
+    try:
+        from django.conf import settings
+        media_root = getattr(settings, "MEDIA_ROOT", None)
+    except Exception:
+        pass
+
+    if not media_root:
+        candidate_dirs = [
+            Path(__file__).resolve().parent.parent.parent / "dataset" / "media",
+            Path(__file__).resolve().parent.parent / "dataset" / "media",
+            Path("/app/dataset/media"),
+        ]
+        for d in candidate_dirs:
+            if d.exists():
+                media_root = d
+                break
+
+    if not media_root or not Path(media_root).exists():
+        return None
+
+    media_root = Path(media_root)
+
+    # 1. Проверяем точное совпадение в media_map
+    target_filename = media_map.get(raw_clean)
+
+    # 2. Проверяем URL без query params
+    if not target_filename:
+        clean_no_q = raw_clean.split("?")[0]
+        target_filename = media_map.get(clean_no_q)
+
+    # 3. Если это имя файла или путь /media/...
+    if not target_filename and not raw_clean.startswith("http"):
+        fname = raw_clean.replace("/media/", "").lstrip("/\\")
+        if (media_root / fname).exists():
+            return f"/media/{fname}"
+
+    if target_filename and (media_root / target_filename).exists():
+        return f"/media/{target_filename}"
+
+    return None
 
 
 def _call_local_gpt(prompt: str, on_token=None, max_tokens: Optional[int] = None) -> str:
@@ -480,13 +561,9 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
 
 
         for img in chunk_images:
-            if not img or not isinstance(img, str):
-                continue
-            img_clean = img.strip().rstrip(")")
-            # Валидируем расширение или путь к изображению
-            if any(img_clean.lower().endswith(ext) for ext in ('.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif')) or '/media/' in img_clean:
-                if img_clean not in images:
-                    images.append(img_clean)
+            resolved_img = resolve_image_url(img)
+            if resolved_img and resolved_img not in images:
+                images.append(resolved_img)
 
         new_cache_items.append({
             "title": title,

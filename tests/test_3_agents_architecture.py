@@ -56,13 +56,13 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         line_500 = determine_support_line("Что делать при ошибке 500 на сервере?")
         self.assertEqual(line_500["routed_line"], "L2", "L3-проблема должна направляться на L2!")
         self.assertTrue(line_500["needs_l3_confirmation"], "Должен быть выставлен флаг подтверждения 3-й линии!")
-        self.assertIn("3-я линия", line_500["target_specialist"])
+        self.assertIn("3-й линии", line_500["target_specialist"])
 
         # 3. Формирование ответа пользователю
         reply = format_escalation_reply(ticket, line_500, ["[✗] Шаг 1: Ошибка 500 сохраняется"])
         self.assertIn(ticket, reply)
-        self.assertIn("2-ю линию технической поддержки", reply)
-        self.assertIn("специалистов 3-й линии", reply)
+        self.assertIn("2-й линии технической поддержки", reply)
+        self.assertIn("3-ю линию", reply)
         self.assertIn("чек-лист диагностики", reply.lower())
 
         # 4. Формирование Context Card оператора
@@ -147,8 +147,8 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         # Проверяем, что сработала эскалация (Агент 3)
         self.assertIn("официально зарегистрировано", res["answer"])
         self.assertIn("INC-2026-", res["answer"])
-        self.assertIn("2-ю линию технической поддержки", res["answer"])
-        self.assertIn("специалистов 3-й линии", res["answer"])
+        self.assertIn("2-й линии технической поддержки", res["answer"])
+        self.assertIn("3-ю линию", res["answer"])
         
         # Маршрутизация на L2 (не напрямую на L3!)
         self.assertEqual(res["line_info"]["line"], "L2")
@@ -342,6 +342,45 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         # 2. Тестируем очистку section_header
         clean_sec = clean_citation_section(sec_encoded)
         self.assertEqual(clean_sec, "Введение > Инструкция по регистрации на Портале")
+
+    def test_support_lines_matrix_classification(self):
+        """Проверка распределения по линиям поддержки: бот строго возвращает L1 или L2."""
+        from rag.router import route_support_line
+
+        # 1. Линия 1 (L1) — Общая поддержка: закупки, ЗМО по 223-ФЗ и 44-ФЗ, регистрация, СТЕ, финансы
+        self.assertEqual(route_support_line("Закупки малого объема до 3 млн рублей по 223-ФЗ")["line"], "L1")
+        self.assertEqual(route_support_line("Как зарегистрироваться поставщику в ЕИС и ЕРУЗ?")["line"], "L1")
+        self.assertEqual(route_support_line("Как добавить позицию в каталог СТЕ?")["line"], "L1")
+        self.assertEqual(route_support_line("Кто признается победителем котировочной сессии?")["line"], "L1")
+        self.assertEqual(route_support_line("Как получить независимую банковскую гарантию?")["line"], "L1")
+        self.assertEqual(route_support_line("Как подать жалобу в ФАС по 44-ФЗ?")["line"], "L1")
+
+        # 2. Линия 2 (L2) — Техническая поддержка: ЭЦП, КриптоПро, МЧД, УПД, браузеры, технические ошибки
+        self.assertEqual(route_support_line("Как настроить плагин КриптоПро для работы на Портале?")["line"], "L2")
+        self.assertEqual(route_support_line("Не удается подписать документ электронной подписью")["line"], "L2")
+        self.assertEqual(route_support_line("Как сформировать и подписать УПД при электронном актировании?")["line"], "L2")
+        self.assertEqual(route_support_line("Как добавить машиночитаемую доверенность (МЧД)?")["line"], "L2")
+        self.assertEqual(route_support_line("Что делать при ошибке РДИК_1074?")["line"], "L2")
+        self.assertEqual(route_support_line("Ошибка 500 на сервере при переходе в корзину")["line"], "L2")
+
+    def test_resolve_image_url_mapping(self):
+        """Проверка резолвинга изображений: валидные ссылки переводятся в /media/..., битые отсекаются."""
+        from rag.main_rag import resolve_image_url
+
+        # 1. Известное изображение из media_map, существующее на диске
+        resolved = resolve_image_url("https://help.mos.ru/uploads/blobid1(208).png")
+        self.assertIsNotNone(resolved)
+        self.assertTrue(resolved.startswith("/media/"))
+        self.assertTrue(resolved.endswith(".png"))
+
+        # 2. Относительный путь /uploads/
+        resolved_rel = resolve_image_url("/uploads/blobid1(208).png")
+        self.assertIsNotNone(resolved_rel)
+        self.assertTrue(resolved_rel.startswith("/media/"))
+
+        # 3. Несуществующее изображение -> возвращает None (исключает битые ссылки)
+        missing = resolve_image_url("https://help.mos.ru/uploads/non_existing_random_screenshot_99999.png")
+        self.assertIsNone(missing)
 
 
 if __name__ == '__main__':
