@@ -114,13 +114,13 @@ MODE="${1:-server}"
 case "$MODE" in
     server|web)
         echo -e "\n${GREEN}=== Запуск Django API сервера (0.0.0.0:8000) ===${NC}"
-        python "$SCRIPT_DIR/RLT_project/manage.py migrate" --noinput
-        python "$SCRIPT_DIR/RLT_project/manage.py runserver" 0.0.0.0:8000
+        python "$SCRIPT_DIR/RLT_project/manage.py" migrate --noinput
+        python "$SCRIPT_DIR/RLT_project/manage.py" runserver 0.0.0.0:8000
         ;;
 
     test)
         echo -e "\n${GREEN}=== Запуск набора тестов ===${NC}"
-        python -m unittest tests.test_stream_workflow
+        python -m unittest tests.test_3_agents_architecture
         ;;
 
     qa)
