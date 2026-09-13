@@ -18,8 +18,6 @@ services:
       timeout: 3s
       retries: 10
 
-# kafka
-
   rag: &rag_runtime
     image: maestro-rag
     build:
