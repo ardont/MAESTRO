@@ -243,7 +243,7 @@ def api_ask(request):
         logger.info(f"[API ASK SUCCESS] chat={chat.id} line={resp_line['line']} citations_count={len(citations)}")
         print(f"[API ASK SUCCESS] Чат {chat.id} отвечен по линии {resp_line['line']} ({resp_line.get('name')})")
 
-        return JsonResponse({
+        resp_payload = {
             "answer": answer_text,
             "citations": citations,
             "images": images,
@@ -255,7 +255,13 @@ def api_ask(request):
                 "question_message": str(in_msg.id),
                 "answer_message": str(out_msg.id),
             }
-        }, status=200)
+        }
+        if "operator_card" in rag_res:
+            resp_payload["operator_card"] = rag_res["operator_card"]
+            resp_payload["assigned_to"] = str(chat.assigned_to.id) if (chat and getattr(chat, "assigned_to", None)) else None
+
+        return JsonResponse(resp_payload, status=200)
+
 
     except Exception as e:
         logger.exception(f"[API_ASK ERROR] Ошибка обработки запроса: {e}")

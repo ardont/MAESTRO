@@ -21,7 +21,14 @@ from typing import Dict, Any, List, Optional, AsyncIterator
 from .normalize_query import normalise_query, TERMINS
 from .url_utils import (
     normalize_portal_url, normalize_markdown_links,
-    clean_citation_title, clean_citation_section
+    clean_citation_title, clean_citation_section,
+    extract_pdf_citation
+)
+from .escalation import (
+    generate_ticket_id,
+    determine_support_line,
+    format_escalation_reply,
+    build_operator_context_card
 )
 
 
@@ -312,27 +319,112 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     logger.info(f"[SEARCH TIMING] Поиск в Qdrant занял: {search_duration:.3f} сек. Найдено точек: {len(hits)} (Max Score: {max_score:.4f})")
     print(f"[RAG PIPELINE] Поиск в базе занял: {search_duration:.2f} сек. Найдено документов: {len(hits)} (Max Score: {max_score:.4f})")
 
-    # ПОРОГ РЕЛЕВАНТНОСТИ (исключение случайных источников и галлюцинаций на бессмысленные запросы вроде "хочу омлет")
-    has_lexical_overlap = False
-    query_words = [w for w in re.findall(r'[a-zA-Zа-яА-ЯёЁ0-9]{3,}', user_message.lower()) 
-                   if w not in {"как", "что", "где", "куда", "когда", "почему", "зачем", "если", "для", "или", "под", "над", "при", "про", "меня", "тебя", "хочу", "могу", "надо", "нужно"}]
-    if query_words:
+    # ПОРОГ РЕЛЕВАНТНОСТИ И ДЕТЕКЦИЯ ВОПРОСОВ ВНЕ БАЗЫ ЗНАНИЙ (OUT-OF-KB)
+    GENERIC_PLATFORM_TERMS = {
+        "портал", "портале", "портала", "порталу", "порталом",
+        "поставщик", "поставщика", "поставщику", "поставщики", "поставщиков", "поставщикам", "поставщиками",
+        "заказчик", "заказчика", "заказчику", "заказчики", "заказчиков",
+        "закупка", "закупки", "закупках", "закупку", "закупок", "закупками",
+        "москва", "москвы", "москве", "московск",
+        "сайт", "сайте", "система", "системе", "сервис", "сервисе", "сервисы",
+        "личный", "кабинет", "личном", "кабинете",
+        "продаваться", "продавать", "купить", "продать", "продается", "продаются", "продажи",
+        "товар", "товары", "товаров", "продукция", "услуга", "услуги", "работа", "работы",
+        "можно", "будет", "будут", "может", "могут", "ли",
+        "такое", "такой", "такая", "какой", "какая", "какие",
+        "есть", "нет", "как", "что", "где", "куда", "когда", "почему", "зачем",
+        "если", "для", "или", "под", "над", "при", "про", "меня", "тебя", "хочу",
+        "могу", "надо", "нужно", "подскажи", "скажи", "пожалуйста", "здравствуйте", "привет",
+        "помощь", "поддержка", "вопрос", "ответ", "правило", "правила"
+    }
+
+    all_query_words = [w for w in re.findall(r'[a-zA-Zа-яА-ЯёЁ0-9]{3,}', user_message.lower()) 
+                       if w not in {"как", "что", "где", "куда", "когда", "почему", "зачем", "если", "для", "или", "под", "над", "при", "про", "меня", "тебя", "хочу", "могу", "надо", "нужно"}]
+    core_query_words = [w for w in all_query_words if w not in GENERIC_PLATFORM_TERMS]
+    has_platform_terms = any(w in GENERIC_PLATFORM_TERMS for w in all_query_words) or any(kw in user_message.lower() for kw in ["портал", "закуп", "поставщ", "zakupki"])
+
+    has_core_overlap = False
+    if core_query_words:
         for h in hits:
             pl = getattr(h, "payload", {}) or {}
             content = (pl.get("title", "") + " " + pl.get("section_header", "") + " " + pl.get("text", "")).lower()
-            if any(qw in content for qw in query_words):
-                has_lexical_overlap = True
+            for cw in core_query_words:
+                stem = cw[:-1] if len(cw) >= 5 else cw
+                if stem in content:
+                    has_core_overlap = True
+                    break
+            if has_core_overlap:
                 break
     else:
-        has_lexical_overlap = True
+        has_core_overlap = any(
+            any((qw[:-1] if len(qw) >= 5 else qw) in (getattr(h, "payload", {}).get("title", "") + " " + getattr(h, "payload", {}).get("text", "")).lower() for qw in all_query_words)
+            for h in hits
+        ) if all_query_words else True
 
-    if not graph_node and (not has_lexical_overlap or max_score < 0.15):
-        logger.info(f"[SCORE/LEXICAL THRESHOLD] Запрос '{user_message}' отсечен (lexical_overlap={has_lexical_overlap}, max_score={max_score:.4f}). Гарантированный отказ без ложных источников.")
-        return {
-            "answer": "Извините, но я могу отвечать только на вопросы, связанные с Порталом поставщиков Москвы (zakupki.mos.ru) и законодательством о закупках (44-ФЗ, 223-ФЗ). Пожалуйста, задайте вопрос по теме закупок или работе сервисов Портала.",
-            "citations": [],
-            "images": []
-        }
+    # Если вершина графа не найдена, проверяем соответствие базе знаний
+    if not graph_node and ((core_query_words and not has_core_overlap) or max_score < 0.15):
+        if has_platform_terms:
+            # Запрос сформулирован в контексте Портала/закупок, но конкретный предмет отсутствует в официальной БЗ (Агент 3: Эскалация)
+            logger.info(f"[OUT-OF-KB ESCALATION] Запрос '{user_message}' отсутствует в БЗ. Мгновенная эскалация на оператора (Агент 3).")
+            ticket_id = generate_ticket_id(getattr(chat, "id", None))
+            line_info = determine_support_line(user_message, current_line="L1")
+
+            operator_card = build_operator_context_card(
+                ticket_id=ticket_id,
+                issue=f"Вопрос вне базы знаний Портала: «{user_message}»",
+                line_info=line_info,
+                checkpoints=["Информация по объекту/сущности отсутствует в официальной базе знаний Портала"],
+                error_code=None
+            )
+
+            if chat:
+                try:
+                    from chat.models import User
+                    support_agent = User.objects.filter(role="support_staff", is_active=True).first()
+                    if not support_agent:
+                        support_agent = User.objects.create(role="support_staff", is_active=True)
+                    chat.assigned_to = support_agent
+                except Exception as e:
+                    if hasattr(chat, "assigned_to"):
+                        chat.assigned_to = "support_staff"
+                    logger.warning(f"Не удалось назначить сотрудника: {e}")
+
+                try:
+                    cache = chat.context_cache if isinstance(chat.context_cache, dict) else {}
+                    cache["operator_card"] = operator_card
+                    chat.context_cache = cache
+                    if hasattr(chat, "save"):
+                        chat.save(update_fields=["assigned_to", "context_cache"])
+                except Exception as e:
+                    logger.warning(f"Не удалось сохранить карточку оператора: {e}")
+
+            reply_text = (
+                f"В официальной базе знаний Портала поставщиков Москвы пока нет регламентированной информации "
+                f"по данному вопросу: «{user_message}».\n\n"
+                f"📋 **Ваше обращение официально зарегистрировано:** `№ {ticket_id}`\n\n"
+                f"🎯 **Маршрутизация:** Запрос передан дежурному специалисту **1-й линии общей поддержки**. "
+                f"Специалист проверит возможность добавления позиции в Каталог СТЕ или предоставит индивидуальную консультацию.\n\n"
+                f"Пожалуйста, ожидайте ответа оператора в этом чате."
+            )
+
+            return {
+                "answer": reply_text,
+                "citations": [],
+                "images": [],
+                "operator_card": operator_card,
+                "line_info": {
+                    "line": line_info["routed_line"],
+                    "name": line_info["routed_line_name"],
+                    "badge_color": line_info.get("badge_color", "#2563eb")
+                }
+            }
+        else:
+            logger.info(f"[SCORE/LEXICAL THRESHOLD] Запрос '{user_message}' отсечен. Отказ без ложных источников.")
+            return {
+                "answer": "Мы помогаем с вопросами о Портале поставщиков Москвы (https://zakupki.mos.ru/) и закупках. Ваш вопрос относится к другой сфере. Пожалуйста, задайте вопрос по теме платформы.",
+                "citations": [],
+                "images": []
+            }
 
     # 4. АГРЕГАЦИЯ КОНТЕКСТА И ИСТОЧНИКОВ
     context_parts = []
@@ -357,9 +449,16 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         raw_url = payload.get("url", "")
         url = normalize_portal_url(raw_url) if raw_url else ""
         title = clean_citation_title(raw_title, url)
-        sec_header = clean_citation_section(payload.get("section_header", ""))
+        raw_sec = payload.get("section_header", "")
+        sec_header = clean_citation_section(raw_sec)
         text_chunk = payload.get("text", "")
         chunk_images = payload.get("images", [])
+
+        # Фильтрация нерелевантных чанков из цитат при наличии ключевых слов
+        chunk_full = (raw_title + " " + (raw_sec or "") + " " + text_chunk).lower()
+        if core_query_words and citations:
+            if not any((cw[:-1] if len(cw) >= 5 else cw) in chunk_full for cw in core_query_words):
+                continue
 
         clean_sec = sec_header if (sec_header and sec_header.strip().lower() != title.strip().lower()) else ""
         sec_label = f" ({clean_sec})" if clean_sec else ""
@@ -372,6 +471,12 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
                 "section": clean_sec,
                 "url": url
             })
+
+        # Проверяем, прикреплен ли к чанку официальный PDF документ
+        pdf_citation = extract_pdf_citation(raw_sec, text_chunk, raw_url)
+        if pdf_citation and pdf_citation.get("url") not in [c.get("url") for c in citations]:
+            citations.append(pdf_citation)
+
 
 
         for img in chunk_images:
@@ -529,6 +634,56 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
                 f"---\n📖 **Источник:** [{main_source['title']}]({main_source.get('url', 'https://zakupki.mos.ru')})"
             )
 
+    # 6.5. ПРОВЕРКА НА ОТВЕТ ОБ ОТСУТСТВИИ В БАЗЕ ЗНАНИЙ (АГЕНТ 3: ЭСКАЛАЦИЯ)
+    out_of_kb_patterns = [
+        r'не\s+содержится\s+в\s+(?:нашей\s+)?базе\s+знаний',
+        r'в\s+базе\s+знаний\s+(?:пока\s+)?нет',
+        r'информация\s+отсутствует\s+в\s+базе',
+        r'нет\s+в\s+базе\s+знаний',
+        r'в\s+базе\s+знаний\s+нет\s+информации',
+        r'база\s+знаний\s+не\s+содержит'
+    ]
+    is_out_of_kb_llm = any(re.search(pat, llm_answer, re.IGNORECASE) for pat in out_of_kb_patterns)
+    if is_out_of_kb_llm:
+        logger.info(f"[OUT-OF-KB IN LLM] Генерация указала на отсутствие в БЗ. Эскалация на оператора.")
+        ticket_id = generate_ticket_id(getattr(chat, "id", None))
+        line_info = determine_support_line(user_message, current_line="L1")
+        operator_card = build_operator_context_card(
+            ticket_id=ticket_id,
+            issue=f"Вопрос вне базы знаний Портала: «{user_message}»",
+            line_info=line_info,
+            checkpoints=["Ответ LLM зафиксировал отсутствие информации в базе знаний Портала"],
+            error_code=None
+        )
+        if chat:
+            try:
+                from chat.models import User
+                support_agent = User.objects.filter(role="support_staff", is_active=True).first()
+                if not support_agent:
+                    support_agent = User.objects.create(role="support_staff", is_active=True)
+                chat.assigned_to = support_agent
+            except Exception:
+                if hasattr(chat, "assigned_to"):
+                    chat.assigned_to = "support_staff"
+            try:
+                cache = chat.context_cache if isinstance(chat.context_cache, dict) else {}
+                cache["operator_card"] = operator_card
+                chat.context_cache = cache
+                if hasattr(chat, "save"):
+                    chat.save(update_fields=["assigned_to", "context_cache"])
+            except Exception:
+                pass
+
+        llm_answer = (
+            f"В официальной базе знаний Портала поставщиков Москвы пока нет регламентированной информации "
+            f"по данному вопросу: «{user_message}».\n\n"
+            f"📋 **Ваше обращение официально зарегистрировано:** `№ {ticket_id}`\n\n"
+            f"🎯 **Маршрутизация:** Запрос передан дежурному специалисту **1-й линии общей поддержки**. "
+            f"Специалист проверит регламентные нормы и предоставит квалифицированный ответ.\n\n"
+            f"Пожалуйста, ожидайте ответа оператора в этом чате."
+        )
+        citations = []
+
     # 7. СТРОГАЯ САНИТАРИЯ ССЫЛОК И ПОЛНОЕ ИСКЛЮЧЕНИЕ 404 / СТОРОННИХ РЕСУРСОВ
     # Исключаем любые случайные упоминания Росэлторг
     llm_answer = re.sub(r'росэлторг\w*', 'Портал поставщиков Москвы', llm_answer, flags=re.IGNORECASE)
@@ -556,13 +711,17 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     llm_answer = re.sub(r'\[([^\]]+)\]\((https?://[^\)]+)\)', _sanitize_md_link, llm_answer)
 
     # Приводим блок «Источник:» к строго эталонному виду первоисточника
-    source_str = f"📖 **Источник:** [{primary_title}]({primary_url})"
-    if "📖 **Источник:**" in llm_answer:
-        llm_answer = re.sub(r'📖\s*\*\*Источник:\*\*\s*\[.*?\]\(.*?\)', source_str, llm_answer)
-    elif "Источник:" in llm_answer:
-        llm_answer = re.sub(r'Источник:\s*\[.*?\]\(.*?\)', source_str, llm_answer)
+    if citations:
+        source_str = f"📖 **Источник:** [{primary_title}]({primary_url})"
+        if "📖 **Источник:**" in llm_answer:
+            llm_answer = re.sub(r'📖\s*\*\*Источник:\*\*\s*\[.*?\]\(.*?\)', source_str, llm_answer)
+        elif "Источник:" in llm_answer:
+            llm_answer = re.sub(r'Источник:\s*\[.*?\]\(.*?\)', source_str, llm_answer)
+        else:
+            llm_answer = llm_answer.strip() + f"\n\n{source_str}"
     else:
-        llm_answer = llm_answer.strip() + f"\n\n{source_str}"
+        llm_answer = re.sub(r'\n*📖\s*\*\*Источник:\*\*\s*\[.*?\]\(.*?\)', '', llm_answer).strip()
+        llm_answer = re.sub(r'\n*Источник:\s*\[.*?\]\(.*?\)', '', llm_answer).strip()
 
     # 8. ОБЯЗАТЕЛЬНОЕ ПРЕДЛОЖЕНИЕ ПОШАГОВОГО WORKFLOW (ПРИОРИТЕТ 4)
     workflow_offer = "\n\nХотите я помогу вам пройти этот процесс по шагам?"
@@ -584,6 +743,14 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
             "total_sec": round(total_duration, 3)
         }
     }
+    if 'operator_card' in locals():
+        res['operator_card'] = operator_card
+        res['line_info'] = {
+            "line": line_info["routed_line"],
+            "name": line_info["routed_line_name"],
+            "badge_color": line_info.get("badge_color", "#2563eb")
+        }
+
 
     if redis_client and cache_key:
         try:

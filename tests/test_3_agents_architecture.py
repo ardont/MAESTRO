@@ -261,7 +261,90 @@ class TestThreeAgentsArchitecture(unittest.TestCase):
         self.assertEqual(wf_next["citations"][0]["title"], "Что такое закупки малого объема (ЗМО) на Портале поставщиков?")
         self.assertIn("589954", wf_next["citations"][0]["url"])
 
+    def test_out_of_kb_portal_query_triggers_agent3_escalation(self):
+        """Проверка кейса 'Банан': сущность отсутствует в БЗ Портала -> мгновенная эскалация с тикетом и БЕЗ ложных цитат."""
+        from rag.main_rag import rag_pipeline_result
+
+        class MockHit:
+            def __init__(self, title, section_header, text, score=0.25, url="https://zakupki.mos.ru/knowledgebase/article/details/ais/507178"):
+                self.score = score
+                self.payload = {
+                    "title": title,
+                    "section_header": section_header,
+                    "text": text,
+                    "url": url,
+                    "images": []
+                }
+
+        # Имитируем ситуацию, когда семантический поиск вернул нерелевантную статью о блокировке поставщика
+        mock_hits = [
+            MockHit(
+                title="Если поставщик заблокирован на Портале поставщиков, будет ли он внесен в реестр недобросовестных поставщиков?",
+                section_header="Блокировка",
+                text="Информация о блокировке учетной записи поставщика на Портале поставщиков Москвы.",
+                score=0.25
+            )
+        ]
+
+        with patch("rag.search.search_hybrid", return_value=mock_hits), \
+             patch("rag.main_rag._call_local_gpt", return_value="ON_TOPIC"):
+            res = rag_pipeline_result(
+                "что такое банан и будет ли он продаваться на портале поставщиков",
+                chat=self.chat
+            )
+
+        # 1. Ответ содержит официальную регистрацию обращения (тикет)
+        self.assertIn("официально зарегистрировано", res["answer"])
+        self.assertIn("INC-2026-", res["answer"])
+        self.assertIn("1-й линии общей поддержки", res["answer"])
+        self.assertIn("нет регламентированной информации", res["answer"])
+
+        # 2. Ложные цитаты (статья о блокировке) ПОЛНОСТЬЮ исключены
+        self.assertEqual(res["citations"], [], "Для вопроса вне базы знаний цитаты должны быть пустыми!")
+
+        # 3. Карточка оператора сформирована
+        card = res.get("operator_card")
+        self.assertIsNotNone(card)
+        self.assertEqual(card["assigned_line"], "L1")
+        self.assertIn("банан", card["issue"])
+
+        # 4. Чат назначен на сотрудника
+        self.assertEqual(self.chat.assigned_to, "support_staff")
+
+    def test_pure_off_topic_polite_refusal(self):
+        """Проверка чистого оффтопика ('как испечь пирог'): вежливый отказ без ложных цитат и без тикета."""
+        from rag.main_rag import rag_pipeline_result
+
+        with patch("rag.main_rag._call_local_gpt", return_value="OFF_TOPIC"):
+            res = rag_pipeline_result(
+                "как испечь яблочный пирог",
+                chat=self.chat
+            )
+
+        self.assertEqual(res["citations"], [])
+        self.assertIn("другой сфере", res["answer"])
+        # Тикет не создается при оффтопике
+        self.assertNotIn("INC-2026-", res["answer"])
+
+    def test_pdf_citation_extraction_and_linking(self):
+        """Проверка извлечения прямых ссылок на официальные PDF-инструкции из метаданных чанка."""
+        from rag.url_utils import extract_pdf_citation, clean_citation_section
+
+        # 1. Тестируем прямое извлечение из percent-encoded section_header
+        sec_encoded = "Введение > Содержимое документа (%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%86%D0%B8%D1%8F_%D0%BF%D0%BE_%D1%80%D0%B5%D0%B3%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D0%B8_%D0%BD%D0%B0_%D0%9F%D0%BE%D1%80%D1%82%D0%B0%D0%BB%D0%B5.pdf): (Часть 1)"
+        pdf_cit = extract_pdf_citation(sec_encoded)
+        self.assertIsNotNone(pdf_cit)
+        self.assertEqual(pdf_cit["title"], "Инструкция по регистрации на Портале")
+        self.assertIn("https://zakupki.mos.ru/cms/Media/docs/", pdf_cit["url"])
+        self.assertIn("%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%86%D0%B8%D1%8F", pdf_cit["url"])
+        self.assertEqual(pdf_cit["section"], "Официальный документ (PDF)")
+
+        # 2. Тестируем очистку section_header
+        clean_sec = clean_citation_section(sec_encoded)
+        self.assertEqual(clean_sec, "Введение > Инструкция по регистрации на Портале")
+
 
 if __name__ == '__main__':
     unittest.main()
+
 
