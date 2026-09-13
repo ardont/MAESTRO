@@ -116,17 +116,18 @@ def resolve_image_url(raw_url: str) -> Optional[str]:
         candidate_dirs = [
             Path(__file__).resolve().parent.parent.parent / "dataset" / "media",
             Path(__file__).resolve().parent.parent / "dataset" / "media",
+            Path(__file__).resolve().parent.parent.parent / "dataset" / "knowledgebase_mos_ru" / "media",
+            Path(__file__).resolve().parent.parent / "dataset" / "knowledgebase_mos_ru" / "media",
             Path("/app/dataset/media"),
+            Path("/app/dataset/knowledgebase_mos_ru/media"),
         ]
         for d in candidate_dirs:
             if d.exists():
                 media_root = d
                 break
 
-    if not media_root or not Path(media_root).exists():
-        return None
-
-    media_root = Path(media_root)
+    if media_root:
+        media_root = Path(media_root)
 
     # 1. Варианты ключей для поиска в media_map
     candidate_keys = [
@@ -160,10 +161,15 @@ def resolve_image_url(raw_url: str) -> Optional[str]:
     # 3. Если это имя файла или путь /media/...
     if not target_filename and not raw_clean.startswith("http"):
         fname = raw_clean.replace("/media/", "").lstrip("/\\")
-        if (media_root / fname).exists():
+        if media_root and (media_root / fname).exists():
+            return f"/media/{fname}"
+        elif fname.endswith(".png") or fname.endswith(".jpg"):
             return f"/media/{fname}"
 
-    if target_filename and (media_root / target_filename).exists():
+    if target_filename:
+        if media_root and (media_root / target_filename).exists():
+            return f"/media/{target_filename}"
+        # Если запущено в микросервисе/контейнере, но файл подтвержден media_map:
         return f"/media/{target_filename}"
 
     return None
