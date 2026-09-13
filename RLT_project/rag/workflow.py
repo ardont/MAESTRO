@@ -12,6 +12,7 @@ workflow.py — Агент 2: Диагност-Проводник (Interactive W
 import re
 import logging
 from typing import Dict, Any, List, Optional
+from .events import LLM_NEED_OPERATOR_EVENT
 from .graph_rag import PROCUREMENT_KNOWLEDGE_GRAPH, get_workflow_step_response, find_graph_node
 from .url_utils import clean_citation_title
 from .escalation import (
@@ -242,6 +243,7 @@ def handle_workflow(message: str, chat: Any) -> Optional[Dict[str, Any]]:
 
         reply_text = format_escalation_reply(ticket_id, line_info, checkpoints, reason=message)
         return {
+            "event": LLM_NEED_OPERATOR_EVENT,
             "answer": reply_text,
             "citations": citations,
             "images": [],

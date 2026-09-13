@@ -211,6 +211,44 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(publish.call_count, 2)
         self.assertTrue(publish.call_args.args[0].meta['off_topic_message'])
 
+    async def test_workflow_escalation_calls_support_and_preserves_reply(self):
+        from rag.conversation import Conversation
+        from rag.escalation import format_escalation_reply
+        from rag import workflow
+
+        for node in ['registration_44fz', 'ecp_cryptopro', 'system_error_troubleshooting']:
+            with self.subTest(node=node):
+                chat = Conversation(id='42', client=Mock(), key='test',
+                                    active_workflow=node, current_step=1)
+                message = self.message.model_copy(update={
+                    'data': self.message.data.model_copy(update={'text': 'не помогло'}),
+                })
+                publish = AsyncMock()
+                with patch.object(self.handlers, 'load_conversation', return_value=chat), \
+                     patch.object(self.handlers.broker, 'publish', publish), \
+                     patch.object(workflow, 'format_escalation_reply', wraps=format_escalation_reply) as formatter, \
+                     patch.object(main_rag, '_call_local_gpt') as llm:
+                    await self.handlers.new_message_handler(message)
+                llm.assert_not_called()
+                formatter.assert_called_once()
+                expected = format_escalation_reply(*formatter.call_args.args, **formatter.call_args.kwargs)
+                self.assertEqual(publish.call_count, 2)
+                token, end = [call.args[0] for call in publish.call_args_list]
+                self.assertEqual(token.event, 'NEW_TOKEN')
+                self.assertEqual(token.data.token, expected)
+                self.assertEqual(end.event, 'END_GENERATION')
+                self.assertEqual(end.data.all_text, expected)
+                self.assertIs(end.meta['need_to_call_support'], True)
+                self.assertEqual(end.meta['user_query'], message.data.text)
+                self.assertFalse(end.meta['need_to_block_chat'])
+                self.assertFalse(end.meta['off_topic_message'])
+                self.assertIsNone(chat.active_workflow)
+                for call in publish.call_args_list:
+                    self.assertEqual(call.kwargs['headers']['event_name'], call.args[0].event)
+                    self.assertEqual(call.kwargs['key'], 42)
+                    self.assertEqual(call.args[0].data.user_uuid, message.data.user_uuid)
+                    call.args[0].model_dump_json()
+
     async def test_real_profanity_pipeline_to_handler(self):
         message = self.message.model_copy(update={
             'data': self.message.data.model_copy(update={'text': 'хуй'}),
