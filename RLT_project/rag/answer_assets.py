@@ -25,7 +25,8 @@ def format_answer_assets(result):
             # Local assets are served by memory-api; expose the public address via env.
             path = raw.lstrip('/')
             if path.startswith(('media/', 'images/')) and '..' not in path.split('/'):
-                url = os.environ.get('RAG_PUBLIC_URL', 'http://localhost:8989').rstrip('/') + '/' + path
+                base = os.environ.get('RAG_PUBLIC_URL', '').rstrip('/')
+                url = f"{base}/{path}" if base else f"/{path}"
             else:
                 continue
         if url not in images and url not in answer:
