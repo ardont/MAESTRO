@@ -53,6 +53,8 @@ services:
       EMBEDDING_MODEL_NAME: /models/ru-en-RoSBERTa
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gpt-oss:20b}
+      MEMORY_OLLAMA_TIMEOUT: ${MEMORY_OLLAMA_TIMEOUT:-180}
+      SUPPORT_SERVICE_URL: ${SUPPORT_SERVICE_URL:-http://localhost:8067}
       # KAFKA_URL on the host may be localhost:9092; that cannot be used here.
       #KAFKA_URL: ${RAG_KAFKA_URL:-kafka:29092}
       KAFKA_URL: kafka:29092

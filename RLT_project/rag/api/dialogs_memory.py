@@ -1,24 +1,24 @@
+import asyncio
 from logging import getLogger
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from .schemas import (Role, LLMSaveRequest, Message)
+from fastapi import FastAPI, HTTPException
+from .schemas import LLMSaveRequest
+from ..dialog_knowledge import save_dialog_knowledge
 
 logger = getLogger(__name__)
-
 app = FastAPI()
-
-app.post('/memory')
-async def save_dialog(
-        request: LLMSaveRequest,
-):
-    logger.info('saving dialog %s: %s', request.dialog_id, request.messages)
-    return {"status": "ok"}
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-)
+# Serialize model work within this worker to avoid concurrent model loads / RAM spikes.
+_index_lock = asyncio.Lock()
 
 
+@app.post('/memory')
+async def save_dialog(request: LLMSaveRequest):
+    try:
+        async with _index_lock:
+            return await asyncio.to_thread(save_dialog_knowledge, request)
+    except ValueError as exc:
+        logger.warning('Invalid summary for dialog %s: %s', request.dialog_id, type(exc).__name__)
+        raise HTTPException(status_code=422, detail='Dialogue or model summary is invalid') from exc
+    except Exception as exc:
+        logger.exception('Knowledge ingestion failed for dialog %s', request.dialog_id)
+        raise HTTPException(status_code=503, detail='Knowledge ingestion unavailable; retry later') from exc

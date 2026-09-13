@@ -34,6 +34,7 @@ from .router import check_guardrails
 from .events import (
     LLMBaseEvent, LLMTokenEvent, LLMDoneEvent, LLMErrorEvent,
     LLMBlockEvent, LLMOffTopicEvent, LLMNeedOperatorEvent,
+    LLM_NEED_OPERATOR_EVENT,
 )
 
 import hashlib
@@ -596,6 +597,8 @@ async def rag_pipeline(
                 yield LLMBlockEvent(data=result["answer"])
             elif result.get("event") == "off-topic":
                 yield LLMOffTopicEvent(data=result["answer"])
+            elif result.get("event") == LLM_NEED_OPERATOR_EVENT:
+                yield LLMNeedOperatorEvent(user_query=user_message, data=result["answer"])
             else:
                 if not streamed:
                     yield LLMTokenEvent(data=result["answer"])
