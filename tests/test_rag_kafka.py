@@ -171,7 +171,7 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
             ([LLMOffTopicEvent(data='Off topic'), LLMDoneEvent()],
              {'need_to_block_chat': False, 'off_topic_message': True, 'need_to_call_support': False, 'user_query': None}, 'Off topic', 2),
             ([LLMErrorEvent(data='internal'), LLMDoneEvent()], {'error': True}, None, 2),
-            ([LLMDoneEvent(redirected_to='operator')], {'need_to_call_support': True}, None, 1),
+            ([LLMDoneEvent(redirected_to='operator')], {'need_to_call_support': True, 'user_query': 'Вопрос'}, None, 1),
         ]
         for events, meta, full_text, count in cases:
             with self.subTest(events=events):
@@ -201,6 +201,18 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
                     if event.event == 'NEW_TOKEN':
                         self.assertEqual(event.data.id, i)
                     event.model_dump_json()  # Must be serializable for Kafka.
+
+    async def test_question_classification_survives_kafka_and_replay(self):
+        publish = AsyncMock()
+        with patch.object(main_rag, 'rag_pipeline_result', return_value={
+            'answer': 'Ответ', 'question_topic': 'ecp_cryptopro',
+        }), patch.object(self.handlers.broker, 'publish', publish):
+            await self.handlers.new_message_handler(self.message)
+            await self.handlers.new_message_handler(self.message)
+        ends = [call.args[0] for call in publish.call_args_list if call.args[0].event == 'END_GENERATION']
+        self.assertEqual(len(ends), 2)
+        self.assertEqual(ends[0].meta['question_topic'], 'ecp_cryptopro')
+        self.assertEqual(ends[0].meta['question_id'], ends[1].meta['question_id'])
 
     async def test_real_pipeline_to_handler(self):
         publish = AsyncMock()
@@ -260,7 +272,10 @@ class KafkaTests(unittest.IsolatedAsyncioTestCase):
             await self.handlers.new_message_handler(message)
         llm.assert_not_called()
         self.assertEqual(publish.call_count, 2)
-        self.assertEqual(publish.call_args.args[0].meta, {
+        meta = dict(publish.call_args.args[0].meta)
+        self.assertEqual(meta.pop('question_topic'), 'blocked')
+        self.assertTrue(meta.pop('question_id'))
+        self.assertEqual(meta, {
             'need_to_block_chat': True, 'off_topic_message': False,
             'need_to_call_support': False, 'user_query': None,
         })

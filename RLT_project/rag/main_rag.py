@@ -889,6 +889,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
     print(f"--- [RAG PIPELINE] КОНЕЦ ЗАПРОСА (Всего: {total_duration:.2f} сек) ---")
 
     res = {
+        "question_topic": graph_node["id"] if graph_node else "other",
         "answer": llm_answer,
         "citations": citations,
         "images": images,
@@ -911,6 +912,7 @@ def rag_pipeline_result(user_message: str, chat=None, category_filter: Optional[
         try:
             # Кэшируем на 24 часа
             redis_client.setex(cache_key, 86400, json.dumps({
+                "question_topic": res["question_topic"],
                 "answer": llm_answer,
                 "citations": citations,
                 "images": images
@@ -928,6 +930,7 @@ async def rag_pipeline(
     loop = asyncio.get_running_loop()
     queue = asyncio.Queue()
     streamed = False
+    previous_workflow = getattr(chat, "active_workflow", None)
 
     def emit(token):
         loop.call_soon_threadsafe(queue.put_nowait, ("token", token))
@@ -953,19 +956,30 @@ async def rag_pipeline(
             if kind == "error":
                 raise value
             result = value
+            kind = result.get('event')
+            if kind == 'off-topic':
+                topic = 'off_topic'
+            elif kind == 'block':
+                topic = 'blocked'
+            else:
+                cache = getattr(chat, 'context_cache', {}) or {}
+                if not isinstance(cache, dict):
+                    cache = {}
+                node_id = result.get('question_topic') or result.get('active_workflow') or previous_workflow or cache.get('graph_node_id')
+                topic = node_id if node_id in PROCUREMENT_KNOWLEDGE_GRAPH else ('operator_request' if kind == LLM_NEED_OPERATOR_EVENT else 'other')
             logger.info("[RAG RESULT] event=%s answer_chars=%s",
                         result.get("event", "token+done"), len(result.get("answer", "")))
             if result.get("event") == "block":
-                yield LLMBlockEvent(data=result["answer"])
+                yield LLMBlockEvent(data=result["answer"], question_topic=topic)
             elif result.get("event") == "off-topic":
-                yield LLMOffTopicEvent(data=result["answer"])
-            elif result.get("event") == LLM_NEED_OPERATOR_EVENT:
-                yield LLMNeedOperatorEvent(user_query=user_message, data=result["answer"])
+                yield LLMOffTopicEvent(data=result["answer"], question_topic=topic)
+            elif result.get("event") == LLM_NEED_OPERATOR_EVENT or result.get("operator_card"):
+                yield LLMNeedOperatorEvent(user_query=user_message, data=result["answer"], question_topic=topic)
             else:
                 answer = format_answer_assets(result)
                 if not streamed:
                     yield LLMTokenEvent(data=answer)
-                yield LLMDoneEvent(answer=answer)
+                yield LLMDoneEvent(answer=answer, question_topic=topic)
             return
     except Exception:
         logger.exception("RAG pipeline failed")

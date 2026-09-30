@@ -1,6 +1,7 @@
 import os
 import asyncio
 from logging import getLogger
+from uuid import uuid5, NAMESPACE_URL
 
 from faststream.kafka import KafkaBroker
 
@@ -64,6 +65,7 @@ async def publish_msg(
         off_topic_message: bool = False,
         need_to_call_support: bool = False,
         user_query: str | None = None,
+        analytics: dict | None = None,
 ) -> None:
     await broker.publish(
         NewTokenEvent(
@@ -86,7 +88,7 @@ async def publish_msg(
                 details="Message received",
                 all_text=message_for_user,
             ),
-            meta={"need_to_block_chat": need_to_block_chat,
+            meta={**(analytics or {}), "need_to_block_chat": need_to_block_chat,
                   "off_topic_message": off_topic_message,
                   "need_to_call_support": need_to_call_support,
                   "user_query": user_query,
@@ -113,6 +115,12 @@ async def new_message_handler(
                                 "Не удалось загрузить состояние диалога. Попробуйте позже.")
         return
     async for llm_event in rag_pipeline(prompt, chat=chat):
+        analytics = {}
+        if llm_event.question_topic:
+            analytics = {
+                'question_topic': llm_event.question_topic,
+                'question_id': str(uuid5(NAMESPACE_URL, f'{new_message.data.user_uuid}:{new_message.data.chat_id}:{new_message.data.timestamp.isoformat()}')),
+            }
         logger.info("RAG EVENT chat_id=%s event=%s", new_message.data.chat_id, llm_event.event)
         if llm_event.event == LLM_TOKEN_EVENT:
             logger.info(
@@ -151,10 +159,10 @@ async def new_message_handler(
                             user_uuid=new_message.data.user_uuid,
                             chat_id=new_message.data.chat_id,
                             details="Request was redirected to support",
-                            all_text="Извините, быстро найти ответ не вышло."
-                                     " Ваш запрос был направлен оператору.",
+                            all_text=llm_event.answer or full_msg or ("Извините, быстро найти ответ не вышло."
+                                     " Ваш запрос был направлен оператору."),
                         ),
-                        meta={"need_to_call_support": True},
+                        meta={**analytics, "need_to_call_support": True, "user_query": prompt},
                     ),
                     headers={'event_name': EVENT_END_GENERATION},
                     topic=LLM_RESPONSE_TOPIC,
@@ -169,7 +177,8 @@ async def new_message_handler(
                             chat_id=new_message.data.chat_id,
                             details="Done",
                             all_text=llm_event.answer if llm_event.answer is not None else full_msg,
-                        )
+                        ),
+                        meta=analytics,
                     ),
                     headers={'event_name': EVENT_END_GENERATION},
                     topic=LLM_RESPONSE_TOPIC,
@@ -190,6 +199,7 @@ async def new_message_handler(
                 topic=LLM_RESPONSE_TOPIC,
                 new_message=new_message,
                 message_for_user=llm_event.data,
+                analytics=analytics,
                 need_to_block_chat=True,
                 off_topic_message=False,
             )
@@ -200,6 +210,7 @@ async def new_message_handler(
                 topic=LLM_RESPONSE_TOPIC,
                 new_message=new_message,
                 message_for_user=llm_event.data,
+                analytics=analytics,
                 need_to_block_chat=False,
                 off_topic_message=True,
             )
@@ -210,6 +221,7 @@ async def new_message_handler(
                 topic=LLM_RESPONSE_TOPIC,
                 new_message=new_message,
                 message_for_user=llm_event.data,
+                analytics=analytics,
                 need_to_block_chat=False,
                 off_topic_message=False,
                 need_to_call_support=True,

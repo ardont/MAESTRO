@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class LLMBaseEvent(BaseModel, ABC):
     event: str
+    question_topic: str | None = None
 
 LLM_TOKEN_EVENT = 'token'
 class LLMTokenEvent(LLMBaseEvent):
